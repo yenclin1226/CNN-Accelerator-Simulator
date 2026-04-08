@@ -28,6 +28,7 @@ struct LaneExecutionConfig {
     PipelineMode pipeline_mode{PipelineMode::BaselineConvRelu};
     bool enable_msb_first{true};
     bool enable_importance_ordering{true};
+    MacOrderingPolicy mac_ordering_policy{MacOrderingPolicy::EtAwareNegativeFirst};
     bool enable_early_termination{false};
 };
 

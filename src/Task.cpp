@@ -7,6 +7,68 @@
 #include <cstdlib>
 #include <stdexcept>
 
+namespace {
+
+bool importanceOrderLess(const MacOp& a, const MacOp& b) {
+    if (a.weight != b.weight) {
+        return a.weight > b.weight;
+    }
+    if (a.full_product != b.full_product) {
+        return a.full_product > b.full_product;
+    }
+    if (a.leading_one != b.leading_one) {
+        return a.leading_one > b.leading_one;
+    }
+    if (a.cin != b.cin) {
+        return a.cin < b.cin;
+    }
+    if (a.ky != b.ky) {
+        return a.ky < b.ky;
+    }
+    return a.kx < b.kx;
+}
+
+int etAwareBucket(const MacOp& op) {
+    if (op.full_product < 0) {
+        return 0;
+    }
+    if (op.full_product == 0) {
+        return 1;
+    }
+    return 2;
+}
+
+bool etAwareNegativeFirstLess(const MacOp& a, const MacOp& b) {
+    const int a_bucket = etAwareBucket(a);
+    const int b_bucket = etAwareBucket(b);
+    if (a_bucket != b_bucket) {
+        return a_bucket < b_bucket;
+    }
+
+    if (a_bucket == 0) {
+        if (a.full_product != b.full_product) {
+            return a.full_product < b.full_product;
+        }
+        if (a.abs_product != b.abs_product) {
+            return a.abs_product > b.abs_product;
+        }
+        if (a.leading_one != b.leading_one) {
+            return a.leading_one > b.leading_one;
+        }
+        if (a.cin != b.cin) {
+            return a.cin < b.cin;
+        }
+        if (a.ky != b.ky) {
+            return a.ky < b.ky;
+        }
+        return a.kx < b.kx;
+    }
+
+    return importanceOrderLess(a, b);
+}
+
+}  // namespace
+
 Task::Task(int id, int output_channel, int output_y, int output_x)
     : id_(id), output_channel_(output_channel), output_y_(output_y), output_x_(output_x) {
     if (id_ < 0) {
@@ -94,8 +156,8 @@ std::size_t Task::totalBitSteps() const {
     return worklist_.size() * 8U;
 }
 
-std::int64_t Task::remainingContributionUpperBound() const {
-    return remaining_contribution_upper_bound_;
+std::int64_t Task::remainingPositiveContributionUpperBound() const {
+    return remaining_positive_contribution_upper_bound_;
 }
 
 double Task::predictedCost() const {
@@ -245,7 +307,9 @@ void Task::setAssignedCycle(std::uint64_t cycle) {
 }
 
 void Task::initializeContext(const ConvLayer& layer,
+                             ExecutionMode execution_mode,
                              bool enable_importance_ordering,
+                             MacOrderingPolicy mac_ordering_policy,
                              BroadcastMode broadcast_mode) {
     worklist_.clear();
     op_index_ = 0;
@@ -256,7 +320,7 @@ void Task::initializeContext(const ConvLayer& layer,
     early_terminated_ = false;
     processed_macs_ = 0;
     processed_bit_steps_ = 0;
-    remaining_contribution_upper_bound_ = 0;
+    remaining_positive_contribution_upper_bound_ = 0;
     status_ = TaskStatus::Issued;
 
     const int kernel_size = layer.kernelSize();
@@ -294,7 +358,17 @@ void Task::initializeContext(const ConvLayer& layer,
                     }
                 }
 
-                remaining_contribution_upper_bound_ += op.abs_product;
+                if (execution_mode == ExecutionMode::Int8BitParallel) {
+                    if (op.full_product > 0) {
+                        remaining_positive_contribution_upper_bound_ += op.full_product;
+                    }
+                } else {
+                    for (const std::int32_t contribution : op.bit_contribution) {
+                        if (contribution > 0) {
+                            remaining_positive_contribution_upper_bound_ += contribution;
+                        }
+                    }
+                }
                 worklist_.push_back(op);
             }
         }
@@ -303,22 +377,11 @@ void Task::initializeContext(const ConvLayer& layer,
     const bool use_importance_ordering =
         enable_importance_ordering && broadcast_mode == BroadcastMode::DemandDriven;
     if (use_importance_ordering) {
-        std::stable_sort(worklist_.begin(), worklist_.end(), [](const MacOp& a, const MacOp& b) {
-            // Tie-breaker:
-            // 1) signed weight descending
-            // 2) full_product descending
-            // 3) leading_one descending
-            if (a.weight != b.weight) {
-                return a.weight > b.weight;
-            }
-            if (a.full_product != b.full_product) {
-                return a.full_product > b.full_product;
-            }
-            if (a.leading_one != b.leading_one) {
-                return a.leading_one > b.leading_one;
-            }
-            return false;
-        });
+        if (mac_ordering_policy == MacOrderingPolicy::EtAwareNegativeFirst) {
+            std::stable_sort(worklist_.begin(), worklist_.end(), etAwareNegativeFirstLess);
+        } else {
+            std::stable_sort(worklist_.begin(), worklist_.end(), importanceOrderLess);
+        }
     }
 }
 
@@ -343,14 +406,14 @@ void Task::markMacStarted() {
 void Task::markBitProcessed(std::int32_t signed_contribution) {
     accumulator_ += signed_contribution;
     ++processed_bit_steps_;
-    decrementRemainingBound(std::llabs(static_cast<long long>(signed_contribution)));
+    decrementRemainingPositiveContributionUpperBound(signed_contribution);
 }
 
 void Task::markParallelMacProcessed(std::int32_t signed_product) {
     accumulator_ += signed_product;
     ++processed_bit_steps_;
     processed_bit_steps_ += 7U;
-    decrementRemainingBound(std::llabs(static_cast<long long>(signed_product)));
+    decrementRemainingPositiveContributionUpperBound(signed_product);
 }
 
 void Task::advanceToNextOp() {
@@ -365,17 +428,19 @@ void Task::finalizeSkippedWorkOnEarlyTermination() {
     }
 
     op_index_ = worklist_.size();
-    remaining_contribution_upper_bound_ = 0;
+    remaining_positive_contribution_upper_bound_ = 0;
 }
 
-void Task::decrementRemainingBound(std::int64_t abs_delta) {
-    if (abs_delta < 0) {
-        abs_delta = 0;
+void Task::decrementRemainingPositiveContributionUpperBound(std::int32_t signed_delta) {
+    if (signed_delta <= 0) {
+        return;
     }
-    if (abs_delta > remaining_contribution_upper_bound_) {
-        remaining_contribution_upper_bound_ = 0;
+
+    const std::int64_t positive_delta = static_cast<std::int64_t>(signed_delta);
+    if (positive_delta > remaining_positive_contribution_upper_bound_) {
+        remaining_positive_contribution_upper_bound_ = 0;
     } else {
-        remaining_contribution_upper_bound_ -= abs_delta;
+        remaining_positive_contribution_upper_bound_ -= positive_delta;
     }
 }
 

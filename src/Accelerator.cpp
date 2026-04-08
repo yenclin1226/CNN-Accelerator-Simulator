@@ -25,6 +25,7 @@ LaneExecutionConfig composeLaneConfig(const AcceleratorConfig& config) {
     lane_config.pipeline_mode = config.pipeline_mode;
     lane_config.enable_msb_first = config.enable_msb_first;
     lane_config.enable_importance_ordering = config.enable_importance_ordering;
+    lane_config.mac_ordering_policy = config.mac_ordering_policy;
     lane_config.enable_early_termination = config.enable_early_termination;
     return lane_config;
 }
@@ -53,6 +54,8 @@ constexpr double kPlacementWeightLocalityRewardScale = 0.22;
 constexpr double kPlacementWeightLocalityRewardCap = 0.70;
 constexpr double kPlacementSpatialLocalityRewardScale = 0.06;
 constexpr double kPlacementSpatialLocalityRewardCap = 0.22;
+constexpr double kPlacementLocalityTieEpsilon = 0.08;
+constexpr double kPlacementLowCostLocalityShortlistEpsilon = 0.14;
 constexpr double kBroadcastFanoutDominantFamilyReward = 2.0;
 constexpr double kBroadcastFanoutNaturalGroupReward = 1.5;
 constexpr double kBroadcastFanoutPhaseMatchReward = 1.5;
@@ -696,11 +699,32 @@ std::vector<int> Accelerator::buildEtawareMemoryAwareAssignments(
     // nearby-spatial-tile rewards as lightweight corrections to preserve local memory reuse.
     for (int task_index : task_indices) {
         const Task& task = tasks[static_cast<std::size_t>(task_index)];
-        double best_score = std::numeric_limits<double>::max();
-        int best_group = 0;
         const int output_family = task.outputChannel() % config_.num_groups;
         const int natural_group = initialGroupForTask(task);
         const int spatial_tile_id = computeSpatialTileId(task);
+        const std::size_t high_cost_bucket_index =
+            std::min<std::size_t>(bucket_centers.size() - 1U, static_cast<std::size_t>(kEtaCostBuckets / 2));
+        const double high_cost_reference = bucket_centers[high_cost_bucket_index];
+        const bool tighten_locality_window =
+            task.costBucketId() >= (kEtaCostBuckets - 1) || task.predictedCost() >= high_cost_reference;
+        const double locality_shortlist_epsilon =
+            tighten_locality_window ? kPlacementLocalityTieEpsilon
+                                    : kPlacementLowCostLocalityShortlistEpsilon;
+
+        struct CandidateScore {
+            int group_id{0};
+            double core_score{0.0};
+            double locality_score{0.0};
+            std::uint64_t task_count{0U};
+        };
+
+        std::vector<CandidateScore> candidates;
+        candidates.reserve(static_cast<std::size_t>(config_.num_groups));
+        double best_core_score = std::numeric_limits<double>::max();
+        std::uint64_t best_anchor_channel_count = 0U;
+        std::uint64_t best_anchor_tile_count = 0U;
+        int best_anchor_channel_group = -1;
+        int best_anchor_tile_group = -1;
 
         for (int group_id = 0; group_id < config_.num_groups; ++group_id) {
             const GroupAssignmentState& state = group_states[static_cast<std::size_t>(group_id)];
@@ -721,6 +745,8 @@ std::vector<int> Accelerator::buildEtawareMemoryAwareAssignments(
             const double load_penalty =
                 std::max(0.0, projected_group_load - average_projected_load) /
                 std::max(32.0, average_projected_load);
+            const double locality_reward_slack =
+                (projected_group_load > average_projected_load) ? (1.0 / (1.0 + load_penalty)) : 1.0;
             const double existing_family_reward =
                 std::min(kPlacementExistingFamilyRewardCap,
                          static_cast<double>(
@@ -745,7 +771,8 @@ std::vector<int> Accelerator::buildEtawareMemoryAwareAssignments(
             const double same_channel_reward =
                 std::min(kPlacementWeightLocalityRewardCap,
                          static_cast<double>(same_channel_count) *
-                             kPlacementWeightLocalityRewardScale);
+                             kPlacementWeightLocalityRewardScale) *
+                locality_reward_slack;
 
             const auto spatial_tile_it = state.spatial_tile_counts.find(spatial_tile_id);
             const std::uint64_t same_tile_count =
@@ -753,19 +780,76 @@ std::vector<int> Accelerator::buildEtawareMemoryAwareAssignments(
             const double same_tile_reward =
                 std::min(kPlacementSpatialLocalityRewardCap,
                          static_cast<double>(same_tile_count) *
-                             kPlacementSpatialLocalityRewardScale);
+                             kPlacementSpatialLocalityRewardScale) *
+                locality_reward_slack;
 
-            const double score =
+            const double core_score =
                 normalized_cost_penalty * kPlacementCostWeight +
                 bucket_penalty * kPlacementBucketWeight +
-                load_penalty * kPlacementLoadWeight + locality_penalty + phase_penalty -
-                same_channel_reward - same_tile_reward;
-            if (score < best_score ||
-                (score == best_score &&
-                 state.task_count <
-                     group_states[static_cast<std::size_t>(best_group)].task_count)) {
-                best_score = score;
-                best_group = group_id;
+                load_penalty * kPlacementLoadWeight + locality_penalty + phase_penalty;
+            const double locality_score = same_channel_reward + same_tile_reward;
+            best_core_score = std::min(best_core_score, core_score);
+            if (same_channel_count > best_anchor_channel_count) {
+                best_anchor_channel_count = same_channel_count;
+                best_anchor_channel_group = group_id;
+            }
+            if (same_tile_count > best_anchor_tile_count) {
+                best_anchor_tile_count = same_tile_count;
+                best_anchor_tile_group = group_id;
+            }
+            candidates.push_back(CandidateScore{
+                group_id,
+                core_score,
+                locality_score,
+                state.task_count});
+        }
+
+        double best_shortlist_core_score = std::numeric_limits<double>::max();
+        double best_locality_score = -std::numeric_limits<double>::infinity();
+        std::uint64_t best_task_count = std::numeric_limits<std::uint64_t>::max();
+        int best_group = candidates.front().group_id;
+        std::vector<bool> shortlist_members(static_cast<std::size_t>(config_.num_groups), false);
+        for (const CandidateScore& candidate : candidates) {
+            const bool core_in_shortlist =
+                candidate.core_score <= best_core_score + locality_shortlist_epsilon;
+            if (core_in_shortlist) {
+                shortlist_members[static_cast<std::size_t>(candidate.group_id)] = true;
+            }
+        }
+        if (best_anchor_channel_count > 0U) {
+            shortlist_members[static_cast<std::size_t>(best_anchor_channel_group)] = true;
+        }
+        if (best_anchor_tile_count > 0U) {
+            shortlist_members[static_cast<std::size_t>(best_anchor_tile_group)] = true;
+        }
+
+        for (const CandidateScore& candidate : candidates) {
+            if (!shortlist_members[static_cast<std::size_t>(candidate.group_id)]) {
+                continue;
+            }
+            if (candidate.locality_score > best_locality_score ||
+                (candidate.locality_score == best_locality_score &&
+                 (candidate.core_score + kPlacementLocalityTieEpsilon < best_shortlist_core_score ||
+                  (std::abs(candidate.core_score - best_shortlist_core_score) <=
+                       kPlacementLocalityTieEpsilon &&
+                   candidate.task_count < best_task_count)))) {
+                best_shortlist_core_score = candidate.core_score;
+                best_locality_score = candidate.locality_score;
+                best_task_count = candidate.task_count;
+                best_group = candidate.group_id;
+            }
+        }
+
+        if (best_locality_score == -std::numeric_limits<double>::infinity()) {
+            for (const CandidateScore& candidate : candidates) {
+                if (candidate.core_score + kPlacementLocalityTieEpsilon < best_shortlist_core_score ||
+                    (std::abs(candidate.core_score - best_shortlist_core_score) <=
+                         kPlacementLocalityTieEpsilon &&
+                     candidate.task_count < best_task_count)) {
+                    best_shortlist_core_score = candidate.core_score;
+                    best_task_count = candidate.task_count;
+                    best_group = candidate.group_id;
+                }
             }
         }
 

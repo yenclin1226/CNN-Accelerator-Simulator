@@ -32,6 +32,7 @@ struct AcceleratorConfig {
     std::size_t global_buffer_capacity_entries{4096};
     bool enable_msb_first{true};
     bool enable_importance_ordering{true};
+    MacOrderingPolicy mac_ordering_policy{MacOrderingPolicy::EtAwareNegativeFirst};
     bool enable_early_termination{false};
     std::uint64_t max_cycles{50'000'000};
     MemoryConfig memory;

@@ -14,3 +14,8 @@ enum class PipelineMode {
     BaselineConvRelu,
     FusedConvEarlyTerminationRelu
 };
+
+enum class MacOrderingPolicy {
+    Importance,
+    EtAwareNegativeFirst
+};

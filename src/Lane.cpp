@@ -6,6 +6,19 @@
 #include <algorithm>
 #include <stdexcept>
 
+namespace {
+
+MacOrderingPolicy effectiveMacOrderingPolicy(const LaneExecutionConfig& config) {
+    if (config.broadcast_mode != BroadcastMode::DemandDriven ||
+        config.pipeline_mode != PipelineMode::FusedConvEarlyTerminationRelu ||
+        !config.enable_early_termination) {
+        return MacOrderingPolicy::Importance;
+    }
+    return config.mac_ordering_policy;
+}
+
+}  // namespace
+
 Lane::Lane(int id) : id_(id) {
     if (id_ < 0) {
         throw std::invalid_argument("Lane id must be non-negative.");
@@ -22,7 +35,12 @@ void Lane::assignTask(Task task,
         throw std::runtime_error("Attempted to assign task to a non-idle lane.");
     }
 
-    task.initializeContext(layer, config.enable_importance_ordering, config.broadcast_mode);
+    task.initializeContext(
+        layer,
+        config.execution_mode,
+        config.enable_importance_ordering,
+        effectiveMacOrderingPolicy(config),
+        config.broadcast_mode);
     task.setStatus(TaskStatus::Issued);
     task_reg_ = std::move(task);
 
@@ -519,7 +537,7 @@ bool Lane::shouldEarlyTerminate(const Task& task, const LaneExecutionConfig& con
         return false;
     }
 
-    const std::int64_t remaining = task.remainingContributionUpperBound();
+    const std::int64_t remaining = task.remainingPositiveContributionUpperBound();
     const std::int64_t partial = static_cast<std::int64_t>(task.accumulator());
 
     // Exact safety: final post-ReLU output is guaranteed zero.

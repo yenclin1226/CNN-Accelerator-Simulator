@@ -65,176 +65,176 @@ Regression dataset
   overall_result=PASS
 
 grouping_policy | et_enabled | total_cycles | mismatches | max_abs_error | mean_abs_error | mean_relative_error | result
-OutputChannelModulo | Off | 77136 | 0 | 0 | 0.000000 | 0.000000 | PASS
-OutputChannelModulo | On | 38100 | 0 | 0 | 0.000000 | 0.000000 | PASS
-TaskRoundRobin | Off | 82991 | 0 | 0 | 0.000000 | 0.000000 | PASS
-TaskRoundRobin | On | 41006 | 0 | 0 | 0.000000 | 0.000000 | PASS
-ETAwareCostBalanced | Off | 79642 | 0 | 0 | 0.000000 | 0.000000 | PASS
-ETAwareCostBalanced | On | 39432 | 0 | 0 | 0.000000 | 0.000000 | PASS
-ETAwareCostBalancedMemoryAware | Off | 80376 | 0 | 0 | 0.000000 | 0.000000 | PASS
-ETAwareCostBalancedMemoryAware | On | 39757 | 0 | 0 | 0.000000 | 0.000000 | PASS
-BroadcastPhaseAwareFanoutBalanced | Off | 78381 | 0 | 0 | 0.000000 | 0.000000 | PASS
-BroadcastPhaseAwareFanoutBalanced | On | 38557 | 0 | 0 | 0.000000 | 0.000000 | PASS
+OutputChannelModulo | Off | 76786 | 0 | 0 | 0.000000 | 0.000000 | PASS
+OutputChannelModulo | On | 33341 | 0 | 0 | 0.000000 | 0.000000 | PASS
+TaskRoundRobin | Off | 83162 | 0 | 0 | 0.000000 | 0.000000 | PASS
+TaskRoundRobin | On | 35420 | 0 | 0 | 0.000000 | 0.000000 | PASS
+ETAwareCostBalanced | Off | 79625 | 0 | 0 | 0.000000 | 0.000000 | PASS
+ETAwareCostBalanced | On | 34620 | 0 | 0 | 0.000000 | 0.000000 | PASS
+ETAwareCostBalancedMemoryAware | Off | 81392 | 0 | 0 | 0.000000 | 0.000000 | PASS
+ETAwareCostBalancedMemoryAware | On | 34557 | 0 | 0 | 0.000000 | 0.000000 | PASS
+BroadcastPhaseAwareFanoutBalanced | Off | 78102 | 0 | 0 | 0.000000 | 0.000000 | PASS
+BroadcastPhaseAwareFanoutBalanced | On | 33729 | 0 | 0 | 0.000000 | 0.000000 | PASS
 
 Section 3: Per-Seed Detailed Results
 ====================================
 mode | case_id | grouping_policy | et_enabled | total_cycles | completed_tasks | lane_occupancy | multiplier_utilization | accumulator_utilization | memory_stall_ratio | broadcast_stall_ratio | work_stealing_events | tasks_terminated_early | output_elements_terminated_early | macs_skipped | bit_steps_skipped | average_processed_fraction_per_task | variance_group_completed_tasks | variance_group_active_lane_cycles | lane_workload_jain_fairness | total_mismatches | max_abs_error | mean_abs_error | mean_relative_error
-MNISTDataset | sample=0 | OutputChannelModulo | Off | 77136 | 6272 | 0.393003 | 0.162622 | 0.162622 | 0.246146 | 0.358300 | 1008 | 0 | 0 | 0 | 0 | 1.000000 | 255.888889 | 7747292.000000 | 0.995407 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | OutputChannelModulo | On | 38100 | 6272 | 0.353285 | 0.139740 | 0.139740 | 0.390968 | 0.249907 | 1563 | 4204 | 4204 | 28976 | 259917 | 0.486678 | 57778.888889 | 19039158.666667 | 0.994484 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | TaskRoundRobin | Off | 82991 | 6272 | 0.365277 | 0.151149 | 0.151149 | 0.379863 | 0.252831 | 23 | 0 | 0 | 0 | 0 | 1.000000 | 92.888889 | 2812304.000000 | 0.999038 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | TaskRoundRobin | On | 41006 | 6272 | 0.328249 | 0.129837 | 0.129837 | 0.481889 | 0.185044 | 37 | 4204 | 4204 | 28976 | 259917 | 0.486678 | 196.888889 | 191749.000000 | 0.999610 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | ETAwareCostBalanced | Off | 79642 | 6272 | 0.380637 | 0.157505 | 0.157505 | 0.296445 | 0.320659 | 2122 | 0 | 0 | 0 | 0 | 1.000000 | 1334.888889 | 40415096.000000 | 0.995752 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | ETAwareCostBalanced | On | 39432 | 6272 | 0.341351 | 0.135019 | 0.135019 | 0.438792 | 0.219035 | 1380 | 4204 | 4204 | 28976 | 259917 | 0.486678 | 175509.888889 | 14179658.666667 | 0.996965 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | Off | 80376 | 6272 | 0.377161 | 0.156066 | 0.156066 | 0.309945 | 0.311199 | 3130 | 0 | 0 | 0 | 0 | 1.000000 | 744.888889 | 22552256.000000 | 0.997562 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | On | 39757 | 6272 | 0.338561 | 0.133916 | 0.133916 | 0.430512 | 0.226452 | 1536 | 4204 | 4204 | 28976 | 259917 | 0.486678 | 354627.888889 | 32030646.333333 | 0.994320 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | Off | 78381 | 6272 | 0.386760 | 0.160039 | 0.160039 | 0.268194 | 0.341984 | 1062 | 0 | 0 | 0 | 0 | 1.000000 | 370.222222 | 11208848.000000 | 0.996502 | 0 | 0 | 0.000000 | 0.000000
-MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | On | 38557 | 6272 | 0.349098 | 0.138083 | 0.138083 | 0.404682 | 0.245395 | 1090 | 4204 | 4204 | 28976 | 259917 | 0.486678 | 121860.555556 | 11926620.666667 | 0.996268 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | OutputChannelModulo | Off | 76786 | 6272 | 0.394794 | 0.163363 | 0.163363 | 0.246947 | 0.355392 | 1008 | 0 | 0 | 0 | 0 | 1.000000 | 199.888889 | 6051836.000000 | 0.995278 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | OutputChannelModulo | On | 33341 | 6272 | 0.333695 | 0.130168 | 0.130168 | 0.410702 | 0.249323 | 1584 | 4204 | 4204 | 33370 | 295346 | 0.408836 | 79240.555556 | 24656775.888889 | 0.992883 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | TaskRoundRobin | Off | 83162 | 6272 | 0.364525 | 0.150838 | 0.150838 | 0.379957 | 0.252961 | 12 | 0 | 0 | 0 | 0 | 1.000000 | 18.555556 | 561788.000000 | 0.999107 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | TaskRoundRobin | On | 35420 | 6272 | 0.314108 | 0.122528 | 0.122528 | 0.504586 | 0.174991 | 40 | 4204 | 4204 | 33370 | 295346 | 0.408836 | 207.222222 | 145207.555556 | 0.999681 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | ETAwareCostBalanced | Off | 79625 | 6272 | 0.380718 | 0.157538 | 0.157538 | 0.297870 | 0.318842 | 2137 | 0 | 0 | 0 | 0 | 1.000000 | 914.555556 | 27689084.000000 | 0.996458 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | ETAwareCostBalanced | On | 34620 | 6272 | 0.321367 | 0.125359 | 0.125359 | 0.462808 | 0.210285 | 2491 | 4204 | 4204 | 33370 | 295346 | 0.408836 | 299656.222222 | 42144524.222222 | 0.990267 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | Off | 81392 | 6272 | 0.372453 | 0.154118 | 0.154118 | 0.305241 | 0.319927 | 4130 | 0 | 0 | 0 | 0 | 1.000000 | 1283.222222 | 38850836.000000 | 0.997025 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | On | 34557 | 6272 | 0.321953 | 0.125588 | 0.125588 | 0.442419 | 0.234843 | 4316 | 4204 | 4204 | 33370 | 295346 | 0.408836 | 335746.555556 | 51424290.222222 | 0.988006 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | Off | 78102 | 6272 | 0.388142 | 0.160610 | 0.160610 | 0.266192 | 0.343221 | 1047 | 0 | 0 | 0 | 0 | 1.000000 | 634.888889 | 19221896.000000 | 0.995759 | 0 | 0 | 0.000000 | 0.000000
+MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | On | 33729 | 6272 | 0.329856 | 0.128671 | 0.128671 | 0.428120 | 0.241111 | 1255 | 4204 | 4204 | 33370 | 295346 | 0.408836 | 164819.888889 | 28311569.222222 | 0.992551 | 0 | 0 | 0.000000 | 0.000000
 
 Section 4: Paired ET Speedup
 ============================
 mode | case_id | grouping_policy | cycles_et_off | cycles_et_on | speedup
-MNISTDataset | sample=0 | OutputChannelModulo | 77136 | 38100 | 2.024567
-MNISTDataset | sample=0 | TaskRoundRobin | 82991 | 41006 | 2.023875
-MNISTDataset | sample=0 | ETAwareCostBalanced | 79642 | 39432 | 2.019730
-MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | 80376 | 39757 | 2.021682
-MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | 78381 | 38557 | 2.032860
+MNISTDataset | sample=0 | OutputChannelModulo | 76786 | 33341 | 2.303050
+MNISTDataset | sample=0 | TaskRoundRobin | 83162 | 35420 | 2.347883
+MNISTDataset | sample=0 | ETAwareCostBalanced | 79625 | 34620 | 2.299971
+MNISTDataset | sample=0 | ETAwareCostBalancedMemoryAware | 81392 | 34557 | 2.355297
+MNISTDataset | sample=0 | BroadcastPhaseAwareFanoutBalanced | 78102 | 33729 | 2.315574
 
 Section 5: Summary Statistics
 =============================
 mode=MNISTDataset, grouping_policy=OutputChannelModulo, case_id=sample=0, et_enabled=Off
-  total_cycles: mean=77136.000000, stddev=0.000000, min=77136.000000, max=77136.000000
-  memory_stall_ratio: mean=0.246146, stddev=0.000000, min=0.246146, max=0.246146
-  broadcast_stall_ratio: mean=0.358300, stddev=0.000000, min=0.358300, max=0.358300
+  total_cycles: mean=76786.000000, stddev=0.000000, min=76786.000000, max=76786.000000
+  memory_stall_ratio: mean=0.246947, stddev=0.000000, min=0.246947, max=0.246947
+  broadcast_stall_ratio: mean=0.355392, stddev=0.000000, min=0.355392, max=0.355392
   tasks_terminated_early: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   macs_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   bit_steps_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   average_processed_fraction_per_task: mean=1.000000, stddev=0.000000, min=1.000000, max=1.000000
   work_stealing_events: mean=1008.000000, stddev=0.000000, min=1008.000000, max=1008.000000
-  lane_workload_jain_fairness: mean=0.995407, stddev=0.000000, min=0.995407, max=0.995407
+  lane_workload_jain_fairness: mean=0.995278, stddev=0.000000, min=0.995278, max=0.995278
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=OutputChannelModulo, case_id=sample=0, et_enabled=On
-  total_cycles: mean=38100.000000, stddev=0.000000, min=38100.000000, max=38100.000000
-  memory_stall_ratio: mean=0.390968, stddev=0.000000, min=0.390968, max=0.390968
-  broadcast_stall_ratio: mean=0.249907, stddev=0.000000, min=0.249907, max=0.249907
+  total_cycles: mean=33341.000000, stddev=0.000000, min=33341.000000, max=33341.000000
+  memory_stall_ratio: mean=0.410702, stddev=0.000000, min=0.410702, max=0.410702
+  broadcast_stall_ratio: mean=0.249323, stddev=0.000000, min=0.249323, max=0.249323
   tasks_terminated_early: mean=4204.000000, stddev=0.000000, min=4204.000000, max=4204.000000
-  macs_skipped: mean=28976.000000, stddev=0.000000, min=28976.000000, max=28976.000000
-  bit_steps_skipped: mean=259917.000000, stddev=0.000000, min=259917.000000, max=259917.000000
-  average_processed_fraction_per_task: mean=0.486678, stddev=0.000000, min=0.486678, max=0.486678
-  work_stealing_events: mean=1563.000000, stddev=0.000000, min=1563.000000, max=1563.000000
-  lane_workload_jain_fairness: mean=0.994484, stddev=0.000000, min=0.994484, max=0.994484
+  macs_skipped: mean=33370.000000, stddev=0.000000, min=33370.000000, max=33370.000000
+  bit_steps_skipped: mean=295346.000000, stddev=0.000000, min=295346.000000, max=295346.000000
+  average_processed_fraction_per_task: mean=0.408836, stddev=0.000000, min=0.408836, max=0.408836
+  work_stealing_events: mean=1584.000000, stddev=0.000000, min=1584.000000, max=1584.000000
+  lane_workload_jain_fairness: mean=0.992883, stddev=0.000000, min=0.992883, max=0.992883
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=TaskRoundRobin, case_id=sample=0, et_enabled=Off
-  total_cycles: mean=82991.000000, stddev=0.000000, min=82991.000000, max=82991.000000
-  memory_stall_ratio: mean=0.379863, stddev=0.000000, min=0.379863, max=0.379863
-  broadcast_stall_ratio: mean=0.252831, stddev=0.000000, min=0.252831, max=0.252831
+  total_cycles: mean=83162.000000, stddev=0.000000, min=83162.000000, max=83162.000000
+  memory_stall_ratio: mean=0.379957, stddev=0.000000, min=0.379957, max=0.379957
+  broadcast_stall_ratio: mean=0.252961, stddev=0.000000, min=0.252961, max=0.252961
   tasks_terminated_early: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   macs_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   bit_steps_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   average_processed_fraction_per_task: mean=1.000000, stddev=0.000000, min=1.000000, max=1.000000
-  work_stealing_events: mean=23.000000, stddev=0.000000, min=23.000000, max=23.000000
-  lane_workload_jain_fairness: mean=0.999038, stddev=0.000000, min=0.999038, max=0.999038
+  work_stealing_events: mean=12.000000, stddev=0.000000, min=12.000000, max=12.000000
+  lane_workload_jain_fairness: mean=0.999107, stddev=0.000000, min=0.999107, max=0.999107
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=TaskRoundRobin, case_id=sample=0, et_enabled=On
-  total_cycles: mean=41006.000000, stddev=0.000000, min=41006.000000, max=41006.000000
-  memory_stall_ratio: mean=0.481889, stddev=0.000000, min=0.481889, max=0.481889
-  broadcast_stall_ratio: mean=0.185044, stddev=0.000000, min=0.185044, max=0.185044
+  total_cycles: mean=35420.000000, stddev=0.000000, min=35420.000000, max=35420.000000
+  memory_stall_ratio: mean=0.504586, stddev=0.000000, min=0.504586, max=0.504586
+  broadcast_stall_ratio: mean=0.174991, stddev=0.000000, min=0.174991, max=0.174991
   tasks_terminated_early: mean=4204.000000, stddev=0.000000, min=4204.000000, max=4204.000000
-  macs_skipped: mean=28976.000000, stddev=0.000000, min=28976.000000, max=28976.000000
-  bit_steps_skipped: mean=259917.000000, stddev=0.000000, min=259917.000000, max=259917.000000
-  average_processed_fraction_per_task: mean=0.486678, stddev=0.000000, min=0.486678, max=0.486678
-  work_stealing_events: mean=37.000000, stddev=0.000000, min=37.000000, max=37.000000
-  lane_workload_jain_fairness: mean=0.999610, stddev=0.000000, min=0.999610, max=0.999610
+  macs_skipped: mean=33370.000000, stddev=0.000000, min=33370.000000, max=33370.000000
+  bit_steps_skipped: mean=295346.000000, stddev=0.000000, min=295346.000000, max=295346.000000
+  average_processed_fraction_per_task: mean=0.408836, stddev=0.000000, min=0.408836, max=0.408836
+  work_stealing_events: mean=40.000000, stddev=0.000000, min=40.000000, max=40.000000
+  lane_workload_jain_fairness: mean=0.999681, stddev=0.000000, min=0.999681, max=0.999681
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalanced, case_id=sample=0, et_enabled=Off
-  total_cycles: mean=79642.000000, stddev=0.000000, min=79642.000000, max=79642.000000
-  memory_stall_ratio: mean=0.296445, stddev=0.000000, min=0.296445, max=0.296445
-  broadcast_stall_ratio: mean=0.320659, stddev=0.000000, min=0.320659, max=0.320659
+  total_cycles: mean=79625.000000, stddev=0.000000, min=79625.000000, max=79625.000000
+  memory_stall_ratio: mean=0.297870, stddev=0.000000, min=0.297870, max=0.297870
+  broadcast_stall_ratio: mean=0.318842, stddev=0.000000, min=0.318842, max=0.318842
   tasks_terminated_early: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   macs_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   bit_steps_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   average_processed_fraction_per_task: mean=1.000000, stddev=0.000000, min=1.000000, max=1.000000
-  work_stealing_events: mean=2122.000000, stddev=0.000000, min=2122.000000, max=2122.000000
-  lane_workload_jain_fairness: mean=0.995752, stddev=0.000000, min=0.995752, max=0.995752
+  work_stealing_events: mean=2137.000000, stddev=0.000000, min=2137.000000, max=2137.000000
+  lane_workload_jain_fairness: mean=0.996458, stddev=0.000000, min=0.996458, max=0.996458
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalanced, case_id=sample=0, et_enabled=On
-  total_cycles: mean=39432.000000, stddev=0.000000, min=39432.000000, max=39432.000000
-  memory_stall_ratio: mean=0.438792, stddev=0.000000, min=0.438792, max=0.438792
-  broadcast_stall_ratio: mean=0.219035, stddev=0.000000, min=0.219035, max=0.219035
+  total_cycles: mean=34620.000000, stddev=0.000000, min=34620.000000, max=34620.000000
+  memory_stall_ratio: mean=0.462808, stddev=0.000000, min=0.462808, max=0.462808
+  broadcast_stall_ratio: mean=0.210285, stddev=0.000000, min=0.210285, max=0.210285
   tasks_terminated_early: mean=4204.000000, stddev=0.000000, min=4204.000000, max=4204.000000
-  macs_skipped: mean=28976.000000, stddev=0.000000, min=28976.000000, max=28976.000000
-  bit_steps_skipped: mean=259917.000000, stddev=0.000000, min=259917.000000, max=259917.000000
-  average_processed_fraction_per_task: mean=0.486678, stddev=0.000000, min=0.486678, max=0.486678
-  work_stealing_events: mean=1380.000000, stddev=0.000000, min=1380.000000, max=1380.000000
-  lane_workload_jain_fairness: mean=0.996965, stddev=0.000000, min=0.996965, max=0.996965
+  macs_skipped: mean=33370.000000, stddev=0.000000, min=33370.000000, max=33370.000000
+  bit_steps_skipped: mean=295346.000000, stddev=0.000000, min=295346.000000, max=295346.000000
+  average_processed_fraction_per_task: mean=0.408836, stddev=0.000000, min=0.408836, max=0.408836
+  work_stealing_events: mean=2491.000000, stddev=0.000000, min=2491.000000, max=2491.000000
+  lane_workload_jain_fairness: mean=0.990267, stddev=0.000000, min=0.990267, max=0.990267
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalancedMemoryAware, case_id=sample=0, et_enabled=Off
-  total_cycles: mean=80376.000000, stddev=0.000000, min=80376.000000, max=80376.000000
-  memory_stall_ratio: mean=0.309945, stddev=0.000000, min=0.309945, max=0.309945
-  broadcast_stall_ratio: mean=0.311199, stddev=0.000000, min=0.311199, max=0.311199
+  total_cycles: mean=81392.000000, stddev=0.000000, min=81392.000000, max=81392.000000
+  memory_stall_ratio: mean=0.305241, stddev=0.000000, min=0.305241, max=0.305241
+  broadcast_stall_ratio: mean=0.319927, stddev=0.000000, min=0.319927, max=0.319927
   tasks_terminated_early: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   macs_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   bit_steps_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   average_processed_fraction_per_task: mean=1.000000, stddev=0.000000, min=1.000000, max=1.000000
-  work_stealing_events: mean=3130.000000, stddev=0.000000, min=3130.000000, max=3130.000000
-  lane_workload_jain_fairness: mean=0.997562, stddev=0.000000, min=0.997562, max=0.997562
+  work_stealing_events: mean=4130.000000, stddev=0.000000, min=4130.000000, max=4130.000000
+  lane_workload_jain_fairness: mean=0.997025, stddev=0.000000, min=0.997025, max=0.997025
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalancedMemoryAware, case_id=sample=0, et_enabled=On
-  total_cycles: mean=39757.000000, stddev=0.000000, min=39757.000000, max=39757.000000
-  memory_stall_ratio: mean=0.430512, stddev=0.000000, min=0.430512, max=0.430512
-  broadcast_stall_ratio: mean=0.226452, stddev=0.000000, min=0.226452, max=0.226452
+  total_cycles: mean=34557.000000, stddev=0.000000, min=34557.000000, max=34557.000000
+  memory_stall_ratio: mean=0.442419, stddev=0.000000, min=0.442419, max=0.442419
+  broadcast_stall_ratio: mean=0.234843, stddev=0.000000, min=0.234843, max=0.234843
   tasks_terminated_early: mean=4204.000000, stddev=0.000000, min=4204.000000, max=4204.000000
-  macs_skipped: mean=28976.000000, stddev=0.000000, min=28976.000000, max=28976.000000
-  bit_steps_skipped: mean=259917.000000, stddev=0.000000, min=259917.000000, max=259917.000000
-  average_processed_fraction_per_task: mean=0.486678, stddev=0.000000, min=0.486678, max=0.486678
-  work_stealing_events: mean=1536.000000, stddev=0.000000, min=1536.000000, max=1536.000000
-  lane_workload_jain_fairness: mean=0.994320, stddev=0.000000, min=0.994320, max=0.994320
+  macs_skipped: mean=33370.000000, stddev=0.000000, min=33370.000000, max=33370.000000
+  bit_steps_skipped: mean=295346.000000, stddev=0.000000, min=295346.000000, max=295346.000000
+  average_processed_fraction_per_task: mean=0.408836, stddev=0.000000, min=0.408836, max=0.408836
+  work_stealing_events: mean=4316.000000, stddev=0.000000, min=4316.000000, max=4316.000000
+  lane_workload_jain_fairness: mean=0.988006, stddev=0.000000, min=0.988006, max=0.988006
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=BroadcastPhaseAwareFanoutBalanced, case_id=sample=0, et_enabled=Off
-  total_cycles: mean=78381.000000, stddev=0.000000, min=78381.000000, max=78381.000000
-  memory_stall_ratio: mean=0.268194, stddev=0.000000, min=0.268194, max=0.268194
-  broadcast_stall_ratio: mean=0.341984, stddev=0.000000, min=0.341984, max=0.341984
+  total_cycles: mean=78102.000000, stddev=0.000000, min=78102.000000, max=78102.000000
+  memory_stall_ratio: mean=0.266192, stddev=0.000000, min=0.266192, max=0.266192
+  broadcast_stall_ratio: mean=0.343221, stddev=0.000000, min=0.343221, max=0.343221
   tasks_terminated_early: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   macs_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   bit_steps_skipped: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
   average_processed_fraction_per_task: mean=1.000000, stddev=0.000000, min=1.000000, max=1.000000
-  work_stealing_events: mean=1062.000000, stddev=0.000000, min=1062.000000, max=1062.000000
-  lane_workload_jain_fairness: mean=0.996502, stddev=0.000000, min=0.996502, max=0.996502
+  work_stealing_events: mean=1047.000000, stddev=0.000000, min=1047.000000, max=1047.000000
+  lane_workload_jain_fairness: mean=0.995759, stddev=0.000000, min=0.995759, max=0.995759
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 mode=MNISTDataset, grouping_policy=BroadcastPhaseAwareFanoutBalanced, case_id=sample=0, et_enabled=On
-  total_cycles: mean=38557.000000, stddev=0.000000, min=38557.000000, max=38557.000000
-  memory_stall_ratio: mean=0.404682, stddev=0.000000, min=0.404682, max=0.404682
-  broadcast_stall_ratio: mean=0.245395, stddev=0.000000, min=0.245395, max=0.245395
+  total_cycles: mean=33729.000000, stddev=0.000000, min=33729.000000, max=33729.000000
+  memory_stall_ratio: mean=0.428120, stddev=0.000000, min=0.428120, max=0.428120
+  broadcast_stall_ratio: mean=0.241111, stddev=0.000000, min=0.241111, max=0.241111
   tasks_terminated_early: mean=4204.000000, stddev=0.000000, min=4204.000000, max=4204.000000
-  macs_skipped: mean=28976.000000, stddev=0.000000, min=28976.000000, max=28976.000000
-  bit_steps_skipped: mean=259917.000000, stddev=0.000000, min=259917.000000, max=259917.000000
-  average_processed_fraction_per_task: mean=0.486678, stddev=0.000000, min=0.486678, max=0.486678
-  work_stealing_events: mean=1090.000000, stddev=0.000000, min=1090.000000, max=1090.000000
-  lane_workload_jain_fairness: mean=0.996268, stddev=0.000000, min=0.996268, max=0.996268
+  macs_skipped: mean=33370.000000, stddev=0.000000, min=33370.000000, max=33370.000000
+  bit_steps_skipped: mean=295346.000000, stddev=0.000000, min=295346.000000, max=295346.000000
+  average_processed_fraction_per_task: mean=0.408836, stddev=0.000000, min=0.408836, max=0.408836
+  work_stealing_events: mean=1255.000000, stddev=0.000000, min=1255.000000, max=1255.000000
+  lane_workload_jain_fairness: mean=0.992551, stddev=0.000000, min=0.992551, max=0.992551
   mean_absolute_error: mean=0.000000, stddev=0.000000, min=0.000000, max=0.000000
 
 Section 6: Summary of Paired Speedup
 ====================================
 mode=MNISTDataset, grouping_policy=OutputChannelModulo, case_id=sample=0
-  paired_et_speedup: mean=2.024567, stddev=0.000000, min=2.024567, max=2.024567
+  paired_et_speedup: mean=2.303050, stddev=0.000000, min=2.303050, max=2.303050
 
 mode=MNISTDataset, grouping_policy=TaskRoundRobin, case_id=sample=0
-  paired_et_speedup: mean=2.023875, stddev=0.000000, min=2.023875, max=2.023875
+  paired_et_speedup: mean=2.347883, stddev=0.000000, min=2.347883, max=2.347883
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalanced, case_id=sample=0
-  paired_et_speedup: mean=2.019730, stddev=0.000000, min=2.019730, max=2.019730
+  paired_et_speedup: mean=2.299971, stddev=0.000000, min=2.299971, max=2.299971
 
 mode=MNISTDataset, grouping_policy=ETAwareCostBalancedMemoryAware, case_id=sample=0
-  paired_et_speedup: mean=2.021682, stddev=0.000000, min=2.021682, max=2.021682
+  paired_et_speedup: mean=2.355297, stddev=0.000000, min=2.355297, max=2.355297
 
 mode=MNISTDataset, grouping_policy=BroadcastPhaseAwareFanoutBalanced, case_id=sample=0
-  paired_et_speedup: mean=2.032860, stddev=0.000000, min=2.032860, max=2.032860
+  paired_et_speedup: mean=2.315574, stddev=0.000000, min=2.315574, max=2.315574
 
