@@ -1,0 +1,125 @@
+#pragma once
+
+#include "ExecutionMode.h"
+#include "Task.h"
+#include "WeightBroadcaster.h"
+
+#include <cstdint>
+#include <optional>
+
+class ConvLayer;
+class MemoryHierarchy;
+
+enum class LaneState {
+    IDLE,
+    CHECK_REUSE,
+    WAIT_FOR_DATA,
+    FETCH_NEXT_SIGNIFICANT_OP,
+    MULTIPLY_OR_SERIAL_STEP,
+    CHECK_TERMINATION,
+    APPLY_RELU,
+    WRITEBACK_OUTPUT,
+    COMPLETE
+};
+
+struct LaneExecutionConfig {
+    ExecutionMode execution_mode{ExecutionMode::Int8BitParallel};
+    BroadcastMode broadcast_mode{BroadcastMode::DemandDriven};
+    PipelineMode pipeline_mode{PipelineMode::BaselineConvRelu};
+    bool enable_msb_first{true};
+    bool enable_importance_ordering{true};
+    bool enable_early_termination{false};
+    EarlyTerminationMode early_termination_mode{EarlyTerminationMode::Exact};
+    std::int32_t early_termination_threshold{0};
+};
+
+class Lane {
+public:
+    explicit Lane(int id);
+
+    void assignTask(Task task,
+                    std::uint64_t current_cycle,
+                    int group_id,
+                    const LaneExecutionConfig& config,
+                    MemoryHierarchy& memory,
+                    const ConvLayer& layer);
+
+    std::optional<Task> step(std::uint64_t current_cycle,
+                             int group_id,
+                             const WeightBroadcaster& broadcaster,
+                             MemoryHierarchy& memory,
+                             ConvLayer& layer,
+                             const LaneExecutionConfig& config);
+
+    std::optional<BroadcastDemand> broadcastDemand(std::uint64_t current_cycle,
+                                                   const LaneExecutionConfig& config) const;
+
+    bool isIdle() const;
+    bool isBusy() const;
+    LaneState state() const;
+
+    std::uint64_t activeCycles() const;
+    std::uint64_t idleCycles() const;
+    std::uint64_t idleFinishedCycles() const;
+    std::uint64_t stallMemoryCycles() const;
+    std::uint64_t stallBroadcastCycles() const;
+    std::uint64_t idleBroadcastMismatchCycles() const;
+    std::uint64_t multiplierActiveCycles() const;
+    std::uint64_t accumulatorActiveCycles() const;
+    std::uint64_t writebackCycles() const;
+    std::uint64_t completedTasks() const;
+    std::uint64_t taskIssueEvents() const;
+    std::uint64_t macsExecuted() const;
+    std::uint64_t earlyTerminatedTasks() const;
+    std::uint64_t bitStepsExecuted() const;
+    std::uint64_t skippedMacs() const;
+    std::uint64_t skippedBitSteps() const;
+    std::uint64_t estimatedCyclesSavedByEarlyTermination() const;
+    double averageProcessedFractionPerTask() const;
+
+private:
+    std::optional<Task> stepScheduleDriven(std::uint64_t current_cycle,
+                                           int group_id,
+                                           const WeightBroadcaster& broadcaster,
+                                           MemoryHierarchy& memory,
+                                           const LaneExecutionConfig& config);
+    std::optional<Task> finalizeScheduleDrivenProgress(const LaneExecutionConfig& config);
+    int currentBitIndex(const LaneExecutionConfig& config) const;
+    bool shouldEarlyTerminate(const Task& task, const LaneExecutionConfig& config) const;
+    void resetEphemeralRegisters();
+    std::optional<Task> finalizeCompletedTask();
+
+    int id_{0};
+    LaneState state_{LaneState::IDLE};
+    std::optional<Task> task_reg_;
+
+    const MacOp* current_op_{nullptr};
+
+    std::uint64_t activation_ready_cycle_{0};
+    std::uint64_t weight_ready_cycle_{0};
+    std::uint64_t writeback_ready_cycle_{0};
+
+    int serial_step_in_op_{0};
+    bool current_mac_counted_{false};
+    std::size_t processed_bits_in_current_op_{0};
+
+    std::uint64_t active_cycles_{0};
+    std::uint64_t idle_cycles_{0};
+    std::uint64_t idle_finished_cycles_{0};
+    std::uint64_t stall_memory_cycles_{0};
+    std::uint64_t stall_broadcast_cycles_{0};
+    std::uint64_t idle_broadcast_mismatch_cycles_{0};
+    std::uint64_t multiplier_active_cycles_{0};
+    std::uint64_t accumulator_active_cycles_{0};
+    std::uint64_t writeback_cycles_{0};
+    std::uint64_t completed_tasks_{0};
+    std::uint64_t task_issue_events_{0};
+    std::uint64_t macs_executed_{0};
+
+    std::uint64_t early_terminated_tasks_{0};
+    std::uint64_t bit_steps_executed_{0};
+    std::uint64_t skipped_macs_{0};
+    std::uint64_t skipped_bit_steps_{0};
+    std::uint64_t estimated_cycles_saved_et_{0};
+    double cumulative_processed_fraction_{0.0};
+};
