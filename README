@@ -2,6 +2,8 @@
 This project simulates a C++ CNN accelerator.
 
 ## Build And Run
+Please unzip the .zip file first.
+
 1. Model Training
 ```bash
 python3 training/train_mnist_cnn.py
