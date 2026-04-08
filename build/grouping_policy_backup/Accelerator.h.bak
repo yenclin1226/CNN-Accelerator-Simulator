@@ -1,0 +1,122 @@
+#pragma once
+
+#include "ConvLayer.h"
+#include "ExecutionMode.h"
+#include "Memory.h"
+#include "PEGroup.h"
+#include "Scheduler.h"
+
+#include <cstdint>
+#include <vector>
+
+struct AcceleratorConfig {
+    int num_groups{4};
+    int lanes_per_group{4};
+    int weight_precision_bits{8};
+    std::vector<int> phase_offsets;
+    ExecutionMode execution_mode{ExecutionMode::Int8BitParallel};
+    BroadcastMode broadcast_mode{BroadcastMode::DemandDriven};
+    PipelineMode pipeline_mode{PipelineMode::BaselineConvRelu};
+    bool enable_activation_reuse{true};
+    bool enable_weight_reuse{true};
+    std::size_t local_buffer_capacity_entries{512};
+    std::size_t global_buffer_capacity_entries{4096};
+    bool enable_msb_first{true};
+    bool enable_importance_ordering{true};
+    bool enable_early_termination{false};
+    EarlyTerminationMode early_termination_mode{EarlyTerminationMode::Exact};
+    std::int32_t early_termination_threshold{0};
+    bool print_input_output_tensors{true};
+    bool print_per_element_comparison{true};
+    std::uint64_t max_cycles{50'000'000};
+    MemoryConfig memory;
+};
+
+struct TaskReport {
+    int task_id{0};
+    int output_channel{0};
+    int output_y{0};
+    int output_x{0};
+    bool early_terminated{false};
+    std::int32_t pre_relu_output{0};
+    std::int32_t post_relu_output{0};
+    std::uint64_t processed_macs{0};
+    std::uint64_t skipped_macs{0};
+    std::uint64_t processed_bit_steps{0};
+    std::uint64_t skipped_bit_steps{0};
+};
+
+struct SimulationStats {
+    std::uint64_t total_cycles{0};
+    std::uint64_t completed_tasks{0};
+
+    // Active lane cycles are occupancy numerator (lane non-idle time), not pure compute-only cycles.
+    std::uint64_t active_lane_cycles{0};
+    std::uint64_t idle_lane_cycles{0};
+    double lane_occupancy{0.0};
+    // Legacy alias: this is occupancy, not pure compute utilization.
+    double lane_utilization{0.0};
+
+    std::uint64_t stall_memory_cycles{0};
+    std::uint64_t stall_broadcast_cycles{0};
+    std::uint64_t idle_broadcast_mismatch_cycles{0};
+    std::uint64_t idle_finished_cycles{0};
+    double memory_stall_ratio{0.0};
+    double broadcast_stall_ratio{0.0};
+    double broadcast_mismatch_idle_ratio{0.0};
+    double finished_lane_idle_ratio{0.0};
+    double idle_ratio{0.0};
+
+    std::uint64_t dram_accesses{0};
+    std::uint64_t onchip_buffer_accesses{0};
+    std::uint64_t dram_bytes{0};
+    std::uint64_t onchip_buffer_bytes{0};
+
+    std::uint64_t total_macs{0};
+    double throughput_macs_per_cycle{0.0};
+
+    std::uint64_t multiplier_active_cycles{0};
+    std::uint64_t accumulator_active_cycles{0};
+    double multiplier_utilization{0.0};
+    double accumulator_utilization{0.0};
+    std::uint64_t writeback_cycles{0};
+    std::uint64_t task_issue_events{0};
+
+    std::uint64_t work_stealing_events{0};
+
+    std::uint64_t activation_reuse_hits{0};
+    std::uint64_t activation_reuse_misses{0};
+    std::uint64_t weight_reuse_hits{0};
+    std::uint64_t weight_reuse_misses{0};
+    std::uint64_t memory_requests_avoided{0};
+    std::uint64_t bytes_saved_due_to_reuse{0};
+
+    std::uint64_t tasks_terminated_early{0};
+    std::uint64_t output_elements_terminated_early{0};
+    std::uint64_t macs_skipped{0};
+    std::uint64_t bit_steps_skipped{0};
+    std::uint64_t estimated_cycles_saved_early_termination{0};
+    double average_processed_fraction_per_task{1.0};
+
+    std::vector<TaskReport> task_reports;
+};
+
+class Accelerator {
+public:
+    explicit Accelerator(const AcceleratorConfig& config);
+
+    SimulationStats run(ConvLayer& layer);
+
+private:
+    void initializeGroups();
+    void configureBroadcastersForLayer(const ConvLayer& layer);
+    std::vector<FixedBroadcastScheduleEntry> buildFixedBroadcastSchedule(const ConvLayer& layer,
+                                                                        int group_id) const;
+    void enqueueLayerTasks(std::vector<Task> tasks);
+    bool anyLaneBusy() const;
+
+    AcceleratorConfig config_;
+    std::vector<PEGroup> groups_;
+    Scheduler scheduler_;
+    MemoryHierarchy memory_;
+};

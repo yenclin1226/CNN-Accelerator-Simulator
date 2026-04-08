@@ -1,0 +1,359 @@
+#include "Accelerator.h"
+
+#include <algorithm>
+#include <stdexcept>
+
+namespace {
+
+MemoryConfig composeMemoryConfig(const AcceleratorConfig& config) {
+    MemoryConfig memory_config = config.memory;
+    memory_config.enable_activation_reuse = config.enable_activation_reuse;
+    memory_config.enable_weight_reuse = config.enable_weight_reuse;
+    memory_config.local_buffer_capacity_entries = config.local_buffer_capacity_entries;
+    memory_config.global_buffer_capacity_entries = config.global_buffer_capacity_entries;
+    return memory_config;
+}
+
+LaneExecutionConfig composeLaneConfig(const AcceleratorConfig& config) {
+    LaneExecutionConfig lane_config;
+    lane_config.execution_mode = config.execution_mode;
+    lane_config.broadcast_mode = config.broadcast_mode;
+    lane_config.pipeline_mode = config.pipeline_mode;
+    lane_config.enable_msb_first = config.enable_msb_first;
+    lane_config.enable_importance_ordering = config.enable_importance_ordering;
+    lane_config.enable_early_termination = config.enable_early_termination;
+    lane_config.early_termination_mode = config.early_termination_mode;
+    lane_config.early_termination_threshold = config.early_termination_threshold;
+    return lane_config;
+}
+
+int decodeOutputChannelFromWeightKey(std::uint64_t weight_key) {
+    return static_cast<int>((weight_key >> 32U) & 0xFFFFU);
+}
+
+std::uint64_t packWeightKey(int oc, int cin, int ky, int kx) {
+    const std::uint64_t oc_u = static_cast<std::uint64_t>(static_cast<std::uint32_t>(oc) & 0xFFFFU);
+    const std::uint64_t cin_u =
+        static_cast<std::uint64_t>(static_cast<std::uint32_t>(cin) & 0xFFFFU);
+    const std::uint64_t ky_u = static_cast<std::uint64_t>(static_cast<std::uint32_t>(ky) & 0xFFU);
+    const std::uint64_t kx_u = static_cast<std::uint64_t>(static_cast<std::uint32_t>(kx) & 0xFFU);
+    return (oc_u << 32U) | (cin_u << 16U) | (ky_u << 8U) | kx_u;
+}
+
+bool groupOwnsOutputChannel(int group_id,
+                            int output_channel,
+                            int num_groups,
+                            int total_output_channels) {
+    if (total_output_channels <= 0) {
+        return false;
+    }
+
+    if (total_output_channels >= num_groups) {
+        return (output_channel % num_groups) == group_id;
+    }
+
+    return output_channel == (group_id % total_output_channels);
+}
+
+}  // namespace
+
+Accelerator::Accelerator(const AcceleratorConfig& config)
+    : config_(config), scheduler_(config.num_groups), memory_(composeMemoryConfig(config), config.num_groups) {
+    if (config_.num_groups <= 0) {
+        throw std::invalid_argument("Accelerator must have at least one PE group.");
+    }
+    if (config_.lanes_per_group <= 0) {
+        throw std::invalid_argument("Accelerator must have at least one lane per group.");
+    }
+    if (config_.weight_precision_bits <= 0) {
+        throw std::invalid_argument("Weight precision bits must be positive.");
+    }
+    initializeGroups();
+}
+
+SimulationStats Accelerator::run(ConvLayer& layer) {
+    initializeGroups();
+    scheduler_.clear();
+    memory_.reset();
+    layer.zeroOutput();
+    configureBroadcastersForLayer(layer);
+
+    std::vector<Task> tasks = layer.generateTasks();
+    const std::uint64_t total_tasks = static_cast<std::uint64_t>(tasks.size());
+    enqueueLayerTasks(std::move(tasks));
+
+    const LaneExecutionConfig lane_config = composeLaneConfig(config_);
+
+    std::vector<TaskReport> task_reports;
+    task_reports.reserve(static_cast<std::size_t>(total_tasks));
+
+    std::uint64_t completed_tasks = 0;
+    std::uint64_t cycle = 0;
+
+    while (completed_tasks < total_tasks) {
+        if (cycle > config_.max_cycles) {
+            throw std::runtime_error("Simulation exceeded max cycle budget.");
+        }
+
+        for (PEGroup& group : groups_) {
+            std::vector<BroadcastDemand> demands;
+            if (config_.broadcast_mode == BroadcastMode::DemandDriven) {
+                demands.reserve(group.lanes().size());
+                for (const Lane& lane : group.lanes()) {
+                    if (std::optional<BroadcastDemand> demand = lane.broadcastDemand(cycle, lane_config)) {
+                        demands.push_back(*demand);
+                    }
+                }
+            }
+            group.broadcaster().prepareCycle(
+                cycle, demands, lane_config.execution_mode, config_.broadcast_mode);
+        }
+
+        for (PEGroup& group : groups_) {
+            for (Lane& lane : group.lanes()) {
+                std::optional<Task> done = lane.step(
+                    cycle, group.id(), group.broadcaster(), memory_, layer, lane_config);
+                if (!done) {
+                    continue;
+                }
+
+                ++completed_tasks;
+                TaskReport report;
+                report.task_id = done->id();
+                report.output_channel = done->outputChannel();
+                report.output_y = done->outputY();
+                report.output_x = done->outputX();
+                report.early_terminated = done->earlyTerminated();
+                report.pre_relu_output = done->preReluOutput();
+                report.post_relu_output = done->finalOutput();
+                report.processed_macs = static_cast<std::uint64_t>(done->processedMacs());
+                report.skipped_macs = static_cast<std::uint64_t>(done->skippedMacs());
+                report.processed_bit_steps = static_cast<std::uint64_t>(done->processedBitSteps());
+                report.skipped_bit_steps = static_cast<std::uint64_t>(done->skippedBitSteps());
+                task_reports.push_back(report);
+            }
+        }
+
+        for (PEGroup& group : groups_) {
+            for (Lane& lane : group.lanes()) {
+                if (!lane.isIdle()) {
+                    continue;
+                }
+
+                std::optional<int> preferred_output_channel;
+                if (std::optional<std::uint64_t> payload_weight_key =
+                        group.broadcaster().currentPayloadWeightKey()) {
+                    preferred_output_channel = decodeOutputChannelFromWeightKey(*payload_weight_key);
+                }
+
+                std::optional<Task> task = scheduler_.fetchTask(group.id(), preferred_output_channel);
+                if (!task) {
+                    continue;
+                }
+
+                lane.assignTask(std::move(*task), cycle, group.id(), lane_config, memory_, layer);
+            }
+        }
+
+        ++cycle;
+
+        if (completed_tasks < total_tasks && !scheduler_.hasPendingTasks() && !anyLaneBusy()) {
+            throw std::runtime_error("Simulation stalled before all tasks completed.");
+        }
+    }
+
+    std::sort(task_reports.begin(), task_reports.end(), [](const TaskReport& a, const TaskReport& b) {
+        return a.task_id < b.task_id;
+    });
+
+    SimulationStats stats;
+    stats.total_cycles = cycle;
+    stats.completed_tasks = completed_tasks;
+    stats.task_reports = std::move(task_reports);
+
+    for (const PEGroup& group : groups_) {
+        for (const Lane& lane : group.lanes()) {
+            stats.active_lane_cycles += lane.activeCycles();
+            stats.idle_lane_cycles += lane.idleCycles();
+            stats.idle_finished_cycles += lane.idleFinishedCycles();
+            stats.stall_memory_cycles += lane.stallMemoryCycles();
+            stats.stall_broadcast_cycles += lane.stallBroadcastCycles();
+            stats.idle_broadcast_mismatch_cycles += lane.idleBroadcastMismatchCycles();
+            stats.multiplier_active_cycles += lane.multiplierActiveCycles();
+            stats.accumulator_active_cycles += lane.accumulatorActiveCycles();
+            stats.writeback_cycles += lane.writebackCycles();
+            stats.task_issue_events += lane.taskIssueEvents();
+            stats.total_macs += lane.macsExecuted();
+            stats.tasks_terminated_early += lane.earlyTerminatedTasks();
+            stats.macs_skipped += lane.skippedMacs();
+            stats.bit_steps_skipped += lane.skippedBitSteps();
+            stats.estimated_cycles_saved_early_termination +=
+                lane.estimatedCyclesSavedByEarlyTermination();
+        }
+    }
+
+    const std::uint64_t total_lane_cycles =
+        cycle * static_cast<std::uint64_t>(config_.num_groups) *
+        static_cast<std::uint64_t>(config_.lanes_per_group);
+    if (total_lane_cycles == 0) {
+        stats.lane_occupancy = 0.0;
+        stats.lane_utilization = 0.0;
+        stats.multiplier_utilization = 0.0;
+        stats.accumulator_utilization = 0.0;
+        stats.memory_stall_ratio = 0.0;
+        stats.broadcast_stall_ratio = 0.0;
+        stats.broadcast_mismatch_idle_ratio = 0.0;
+        stats.finished_lane_idle_ratio = 0.0;
+        stats.idle_ratio = 0.0;
+    } else {
+        const double denom = static_cast<double>(total_lane_cycles);
+        stats.lane_occupancy = static_cast<double>(stats.active_lane_cycles) / denom;
+        stats.lane_utilization = stats.lane_occupancy;
+        stats.multiplier_utilization = static_cast<double>(stats.multiplier_active_cycles) / denom;
+        stats.accumulator_utilization = static_cast<double>(stats.accumulator_active_cycles) / denom;
+        stats.memory_stall_ratio = static_cast<double>(stats.stall_memory_cycles) / denom;
+        stats.broadcast_stall_ratio = static_cast<double>(stats.stall_broadcast_cycles) / denom;
+        stats.broadcast_mismatch_idle_ratio =
+            static_cast<double>(stats.idle_broadcast_mismatch_cycles) / denom;
+        stats.finished_lane_idle_ratio = static_cast<double>(stats.idle_finished_cycles) / denom;
+        stats.idle_ratio = static_cast<double>(stats.idle_lane_cycles) / denom;
+    }
+
+    stats.dram_accesses = memory_.dramAccesses();
+    stats.onchip_buffer_accesses = memory_.onChipBufferAccesses();
+    stats.dram_bytes = memory_.dramBytesMoved();
+    stats.onchip_buffer_bytes = memory_.onChipBufferBytesMoved();
+    stats.activation_reuse_hits = memory_.activationReuseHits();
+    stats.activation_reuse_misses = memory_.activationReuseMisses();
+    stats.weight_reuse_hits = memory_.weightReuseHits();
+    stats.weight_reuse_misses = memory_.weightReuseMisses();
+    stats.memory_requests_avoided = memory_.memoryRequestsAvoided();
+    stats.bytes_saved_due_to_reuse = memory_.bytesSavedDueToReuse();
+
+    stats.work_stealing_events = scheduler_.workStealingEvents();
+    stats.throughput_macs_per_cycle =
+        (cycle == 0) ? 0.0 : static_cast<double>(stats.total_macs) / static_cast<double>(cycle);
+
+    std::uint64_t terminated_outputs = 0;
+    double processed_fraction_sum = 0.0;
+    for (const TaskReport& report : stats.task_reports) {
+        if (report.early_terminated) {
+            ++terminated_outputs;
+        }
+        const std::uint64_t total_ops = report.processed_macs + report.skipped_macs;
+        if (total_ops == 0) {
+            processed_fraction_sum += 1.0;
+        } else {
+            processed_fraction_sum +=
+                static_cast<double>(report.processed_macs) / static_cast<double>(total_ops);
+        }
+    }
+    stats.output_elements_terminated_early = terminated_outputs;
+    stats.average_processed_fraction_per_task =
+        stats.task_reports.empty()
+            ? 1.0
+            : processed_fraction_sum / static_cast<double>(stats.task_reports.size());
+
+    return stats;
+}
+
+void Accelerator::initializeGroups() {
+    groups_.clear();
+    groups_.reserve(static_cast<std::size_t>(config_.num_groups));
+
+    for (int group_id = 0; group_id < config_.num_groups; ++group_id) {
+        int phase_offset = group_id % config_.weight_precision_bits;
+        if (!config_.phase_offsets.empty()) {
+            phase_offset = config_.phase_offsets[static_cast<std::size_t>(group_id) %
+                                                 config_.phase_offsets.size()];
+        }
+        groups_.emplace_back(
+            group_id, config_.lanes_per_group, config_.weight_precision_bits, phase_offset);
+    }
+}
+
+void Accelerator::configureBroadcastersForLayer(const ConvLayer& layer) {
+    if (config_.broadcast_mode != BroadcastMode::SnapeaFixedSchedule) {
+        for (PEGroup& group : groups_) {
+            group.broadcaster().clearFixedSchedule();
+        }
+        return;
+    }
+
+    for (PEGroup& group : groups_) {
+        const std::vector<FixedBroadcastScheduleEntry> fixed_schedule =
+            buildFixedBroadcastSchedule(layer, group.id());
+        group.broadcaster().setFixedSchedule(fixed_schedule);
+    }
+}
+
+std::vector<FixedBroadcastScheduleEntry> Accelerator::buildFixedBroadcastSchedule(
+    const ConvLayer& layer,
+    int group_id) const {
+    std::size_t scheduled_output_channels = 0;
+    for (int oc = 0; oc < layer.outputChannels(); ++oc) {
+        if (groupOwnsOutputChannel(group_id, oc, config_.num_groups, layer.outputChannels())) {
+            ++scheduled_output_channels;
+        }
+    }
+
+    const std::size_t weight_count = scheduled_output_channels *
+                                     static_cast<std::size_t>(layer.inputChannels()) *
+                                     static_cast<std::size_t>(layer.kernelSize()) *
+                                     static_cast<std::size_t>(layer.kernelSize());
+    const std::size_t stream_length =
+        weight_count *
+        static_cast<std::size_t>(config_.execution_mode == ExecutionMode::Int8BitParallel
+                                     ? 1
+                                     : config_.weight_precision_bits);
+
+    std::vector<FixedBroadcastScheduleEntry> schedule;
+    schedule.reserve(stream_length);
+
+    for (int oc = 0; oc < layer.outputChannels(); ++oc) {
+        if (!groupOwnsOutputChannel(group_id, oc, config_.num_groups, layer.outputChannels())) {
+            continue;
+        }
+        for (int cin = 0; cin < layer.inputChannels(); ++cin) {
+            for (int ky = 0; ky < layer.kernelSize(); ++ky) {
+                for (int kx = 0; kx < layer.kernelSize(); ++kx) {
+                    FixedBroadcastScheduleEntry entry;
+                    entry.weight_key = packWeightKey(oc, cin, ky, kx);
+
+                    if (config_.execution_mode == ExecutionMode::Int8BitParallel) {
+                        entry.bit_index = -1;
+                        schedule.push_back(entry);
+                        continue;
+                    }
+
+                    for (int step = 0; step < config_.weight_precision_bits; ++step) {
+                        entry.bit_index = config_.enable_msb_first
+                                              ? (config_.weight_precision_bits - 1 - step)
+                                              : step;
+                        schedule.push_back(entry);
+                    }
+                }
+            }
+        }
+    }
+
+    return schedule;
+}
+
+void Accelerator::enqueueLayerTasks(std::vector<Task> tasks) {
+    for (Task& task : tasks) {
+        const int group_id = task.outputChannel() % config_.num_groups;
+        scheduler_.addTask(group_id, std::move(task));
+    }
+}
+
+bool Accelerator::anyLaneBusy() const {
+    for (const PEGroup& group : groups_) {
+        for (const Lane& lane : group.lanes()) {
+            if (lane.isBusy()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}

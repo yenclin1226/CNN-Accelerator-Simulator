@@ -1,0 +1,372 @@
+#include "Accelerator.h"
+#include "ReferenceConv.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+namespace {
+
+    struct ModeResult {
+        std::string name;
+        AcceleratorConfig config;
+        SimulationStats stats;
+        Tensor3D<std::int32_t> output;
+        ErrorMetrics error_metrics;
+    };
+
+    std::uint64_t packOutputCoord(int oc, int oy, int ox) {
+        return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(oc) & 0xFFFFU) << 32U) |
+               (static_cast<std::uint64_t>(static_cast<std::uint32_t>(oy) & 0xFFFFU) << 16U) |
+               static_cast<std::uint64_t>(static_cast<std::uint32_t>(ox) & 0xFFFFU);
+    }
+
+    const TaskReport *findTaskReport(const SimulationStats &stats, int oc, int oy, int ox) {
+        const std::uint64_t target = packOutputCoord(oc, oy, ox);
+        for (const TaskReport &report : stats.task_reports) {
+            if (packOutputCoord(report.output_channel, report.output_y, report.output_x) == target) {
+                return &report;
+            }
+        }
+        return nullptr;
+    }
+
+    std::string executionModeName(ExecutionMode mode) {
+        return mode == ExecutionMode::Int8BitParallel ? "INT8 Bit-Parallel" : "INT8 Bit-Serial";
+    }
+
+    std::string broadcastModeName(BroadcastMode mode) {
+        return mode == BroadcastMode::DemandDriven ? "Demand-Driven Vote-Based"
+                                                   : "SnaPEA-like Fixed Schedule";
+    }
+
+    std::string pipelineModeName(PipelineMode mode) {
+        return mode == PipelineMode::BaselineConvRelu ? "Baseline Conv + ReLU"
+                                                      : "Fused Conv + ET + ReLU";
+    }
+
+    std::string earlyTerminationName(EarlyTerminationMode mode) {
+        return mode == EarlyTerminationMode::Exact ? "Exact" : "Approximate";
+    }
+
+    void printInt8Tensor3D(const std::string &title, const Tensor3D<std::int8_t> &tensor) {
+        std::cout << title << "\n";
+        for (int c = 0; c < tensor.dim0(); ++c) {
+            std::cout << "  [c=" << c << "]\n";
+            for (int y = 0; y < tensor.dim1(); ++y) {
+                std::cout << "    ";
+                for (int x = 0; x < tensor.dim2(); ++x) {
+                    std::cout << std::setw(4) << static_cast<int>(tensor(c, y, x));
+                }
+                std::cout << "\n";
+            }
+        }
+    }
+
+    void printInt8Tensor4DWeights(const std::string &title, const Tensor4D<std::int8_t> &tensor) {
+        std::cout << title << "\n";
+        for (int oc = 0; oc < tensor.dim0(); ++oc) {
+            for (int cin = 0; cin < tensor.dim1(); ++cin) {
+                std::cout << "  [oc=" << oc << ", cin=" << cin << "]\n";
+                for (int ky = 0; ky < tensor.dim2(); ++ky) {
+                    std::cout << "    ";
+                    for (int kx = 0; kx < tensor.dim3(); ++kx) {
+                        std::cout << std::setw(4) << static_cast<int>(tensor(oc, cin, ky, kx));
+                    }
+                    std::cout << "\n";
+                }
+            }
+        }
+    }
+
+    void printInt32Tensor3D(const std::string &title, const Tensor3D<std::int32_t> &tensor) {
+        std::cout << title << "\n";
+        for (int c = 0; c < tensor.dim0(); ++c) {
+            std::cout << "  [c=" << c << "]\n";
+            for (int y = 0; y < tensor.dim1(); ++y) {
+                std::cout << "    ";
+                for (int x = 0; x < tensor.dim2(); ++x) {
+                    std::cout << std::setw(6) << tensor(c, y, x);
+                }
+                std::cout << "\n";
+            }
+        }
+    }
+
+    void printBiasTensor(const Tensor1D<std::int32_t> &bias) {
+        std::cout << "Bias tensor\n  ";
+        for (int oc = 0; oc < bias.dim0(); ++oc) {
+            std::cout << std::setw(6) << bias(oc);
+        }
+        std::cout << "\n";
+    }
+
+    void printModeSummary(const ModeResult &result) {
+        const SimulationStats &stats = result.stats;
+        std::cout << result.name << " Summary\n";
+        std::cout << "  Execution mode: " << executionModeName(result.config.execution_mode) << "\n";
+        std::cout << "  Broadcast mode: " << broadcastModeName(result.config.broadcast_mode) << "\n";
+        std::cout << "  Pipeline mode: " << pipelineModeName(result.config.pipeline_mode) << "\n";
+        std::cout << "  Early termination: "
+                  << (result.config.enable_early_termination
+                          ? ("Enabled (" + earlyTerminationName(result.config.early_termination_mode) + ")")
+                          : "Disabled")
+                  << "\n";
+        std::cout << "  Cycles: " << stats.total_cycles << "\n";
+        std::cout << "  Completed tasks: " << stats.completed_tasks << "\n";
+        std::cout << "  Lane occupancy (active_lane_cycles / total_lane_cycles): " << std::fixed
+                  << std::setprecision(2) << (stats.lane_occupancy * 100.0) << "%\n";
+        std::cout << "  Multiplier utilization (multiplier_active_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2) << (stats.multiplier_utilization * 100.0)
+                  << "%\n";
+        std::cout << "  Accumulator utilization (accumulator_active_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2) << (stats.accumulator_utilization * 100.0)
+                  << "%\n";
+        std::cout << "  Memory stall ratio (stall_memory_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2) << (stats.memory_stall_ratio * 100.0) << "%\n";
+        std::cout << "  Broadcast stall ratio (stall_broadcast_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2) << (stats.broadcast_stall_ratio * 100.0)
+                  << "%\n";
+        std::cout << "  Broadcast mismatch idle ratio (idle_broadcast_mismatch_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2)
+                  << (stats.broadcast_mismatch_idle_ratio * 100.0) << "%\n";
+        std::cout << "  Finished-lane idle ratio (idle_finished_cycles / total_lane_cycles): "
+                  << std::fixed << std::setprecision(2) << (stats.finished_lane_idle_ratio * 100.0)
+                  << "%\n";
+        std::cout << "  Idle ratio (idle_lane_cycles / total_lane_cycles): " << std::fixed
+                  << std::setprecision(2) << (stats.idle_ratio * 100.0) << "%\n";
+        std::cout << "  Active lane cycles (occupancy numerator): " << stats.active_lane_cycles << "\n";
+        std::cout << "  Stall cycles (memory): " << stats.stall_memory_cycles << "\n";
+        std::cout << "  Stall cycles (broadcast): " << stats.stall_broadcast_cycles << "\n";
+        std::cout << "  Idle cycles (broadcast mismatch): " << stats.idle_broadcast_mismatch_cycles
+                  << "\n";
+        std::cout << "  Idle cycles (lane already finished): " << stats.idle_finished_cycles << "\n";
+        std::cout << "  DRAM accesses: " << stats.dram_accesses << " (bytes=" << stats.dram_bytes << ")\n";
+        std::cout << "  On-chip accesses: " << stats.onchip_buffer_accesses
+                  << " (bytes=" << stats.onchip_buffer_bytes << ")\n";
+        std::cout << "  Activation reuse hits/misses: " << stats.activation_reuse_hits << "/"
+                  << stats.activation_reuse_misses << "\n";
+        std::cout << "  Weight reuse hits/misses: " << stats.weight_reuse_hits << "/"
+                  << stats.weight_reuse_misses << "\n";
+        std::cout << "  Memory requests avoided (reuse): " << stats.memory_requests_avoided << "\n";
+        std::cout << "  Bytes saved due to reuse: " << stats.bytes_saved_due_to_reuse << "\n";
+        std::cout << "  Tasks terminated early: " << stats.tasks_terminated_early << "\n";
+        std::cout << "  Output elements terminated early: " << stats.output_elements_terminated_early
+                  << "\n";
+        std::cout << "  MACs skipped: " << stats.macs_skipped << "\n";
+        std::cout << "  Bit-steps skipped: " << stats.bit_steps_skipped << "\n";
+        std::cout << "  Estimated ET cycles saved: " << stats.estimated_cycles_saved_early_termination
+                  << "\n";
+        std::cout << "  Average processed fraction/task: " << std::setprecision(4)
+                  << stats.average_processed_fraction_per_task << "\n";
+        std::cout << "  Error mismatches: " << result.error_metrics.total_mismatches << "/"
+                  << result.error_metrics.total_elements << "\n";
+        std::cout << "  Max abs error: " << result.error_metrics.max_absolute_error << "\n";
+        std::cout << "  Mean abs error: " << std::setprecision(6) << result.error_metrics.mean_absolute_error
+                  << "\n";
+        std::cout << "  Mean relative error: " << std::setprecision(6)
+                  << result.error_metrics.mean_relative_error << "\n";
+    }
+
+    void printPerElementComparison(const std::string &label,
+                                   const Tensor3D<std::int32_t> &reference_pre_relu,
+                                   const Tensor3D<std::int32_t> &reference_post_relu,
+                                   const Tensor3D<std::int32_t> &baseline_output,
+                                   const Tensor3D<std::int32_t> &fused_output,
+                                   const SimulationStats &fused_stats) {
+        std::cout << label << "\n";
+        std::cout << "  oc oy ox | ref_pre ref_post baseline fused | ET procMAC skipMAC procBit skipBit | abs_err\n";
+        for (int oc = 0; oc < reference_post_relu.dim0(); ++oc) {
+            for (int oy = 0; oy < reference_post_relu.dim1(); ++oy) {
+                for (int ox = 0; ox < reference_post_relu.dim2(); ++ox) {
+                    const TaskReport *fused_report = findTaskReport(fused_stats, oc, oy, ox);
+                    const bool early = fused_report ? fused_report->early_terminated : false;
+                    const std::uint64_t processed_macs = fused_report ? fused_report->processed_macs : 0;
+                    const std::uint64_t skipped_macs = fused_report ? fused_report->skipped_macs : 0;
+                    const std::uint64_t processed_bits = fused_report ? fused_report->processed_bit_steps : 0;
+                    const std::uint64_t skipped_bits = fused_report ? fused_report->skipped_bit_steps : 0;
+                    const std::int32_t abs_error =
+                        std::abs(reference_post_relu(oc, oy, ox) - fused_output(oc, oy, ox));
+
+                    std::cout << "  " << std::setw(2) << oc << " " << std::setw(2) << oy << " "
+                              << std::setw(2) << ox << " | " << std::setw(7)
+                              << reference_pre_relu(oc, oy, ox) << " " << std::setw(8)
+                              << reference_post_relu(oc, oy, ox) << " " << std::setw(8)
+                              << baseline_output(oc, oy, ox) << " " << std::setw(5)
+                              << fused_output(oc, oy, ox) << " | " << (early ? "Y " : "N ")
+                              << std::setw(7) << processed_macs << " " << std::setw(7) << skipped_macs
+                              << " " << std::setw(7) << processed_bits << " " << std::setw(7)
+                              << skipped_bits << " | " << std::setw(7) << abs_error << "\n";
+                }
+            }
+        }
+    }
+
+    ModeResult runMode(const std::string &mode_name,
+                       const AcceleratorConfig &config,
+                       const ConvLayer &base_layer,
+                       const Tensor3D<std::int32_t> &reference_post_relu) {
+        ConvLayer mode_layer = base_layer;
+        Accelerator accelerator(config);
+        SimulationStats stats = accelerator.run(mode_layer);
+
+        ModeResult result;
+        result.name = mode_name;
+        result.config = config;
+        result.stats = std::move(stats);
+        result.output = mode_layer.outputTensor();
+        result.error_metrics = computeErrorMetrics(reference_post_relu, result.output);
+        return result;
+    }
+
+} // namespace
+
+int main() {
+    ConvLayerConfig layer_config;
+    layer_config.input_height = 5;
+    layer_config.input_width = 5;
+    layer_config.kernel_size = 3;
+    layer_config.stride = 1;
+    layer_config.padding = 1;
+    layer_config.input_channels = 3;
+    layer_config.output_channels = 2;
+    layer_config.use_bias = true;
+
+    ConvLayer base_layer(layer_config);
+    base_layer.randomizeData(2026);
+
+    const Tensor3D<std::int32_t> reference_pre_relu = runReferenceConvolution(base_layer);
+    const Tensor3D<std::int32_t> reference_post_relu = applyRelu(reference_pre_relu);
+
+    AcceleratorConfig common_config;
+    common_config.num_groups = 6;
+    common_config.lanes_per_group = 6;
+    common_config.weight_precision_bits = 8;
+    common_config.phase_offsets = {0, 2};
+    common_config.execution_mode = ExecutionMode::Int8BitSerial;
+    common_config.broadcast_mode = BroadcastMode::DemandDriven;
+    common_config.enable_activation_reuse = true;
+    common_config.enable_weight_reuse = true;
+    common_config.local_buffer_capacity_entries = 96;
+    common_config.global_buffer_capacity_entries = 512;
+    common_config.enable_msb_first = true;
+    common_config.enable_importance_ordering = true;
+    common_config.max_cycles = 5'000'000;
+    common_config.memory.dram_latency_cycles = 20;
+    common_config.memory.dram_bandwidth_bytes_per_cycle = 32;
+    common_config.memory.global_buffer_latency_cycles = 6;
+    common_config.memory.global_buffer_bandwidth_bytes_per_cycle = 128;
+    common_config.memory.enable_local_buffer = true;
+    common_config.memory.local_buffer_latency_cycles = 2;
+    common_config.memory.local_buffer_bandwidth_bytes_per_cycle = 64;
+    common_config.print_input_output_tensors = true;
+    common_config.print_per_element_comparison = true;
+
+    AcceleratorConfig baseline_config = common_config;
+    baseline_config.pipeline_mode = PipelineMode::BaselineConvRelu;
+    baseline_config.enable_early_termination = false;
+    baseline_config.early_termination_mode = EarlyTerminationMode::Exact;
+    baseline_config.early_termination_threshold = 0;
+
+    AcceleratorConfig fused_exact_config = common_config;
+    fused_exact_config.pipeline_mode = PipelineMode::FusedConvEarlyTerminationRelu;
+    fused_exact_config.enable_early_termination = true;
+    fused_exact_config.early_termination_mode = EarlyTerminationMode::Exact;
+    fused_exact_config.early_termination_threshold = 0;
+
+    AcceleratorConfig fused_approx_config = common_config;
+    fused_approx_config.pipeline_mode = PipelineMode::FusedConvEarlyTerminationRelu;
+    fused_approx_config.enable_early_termination = true;
+    fused_approx_config.early_termination_mode = EarlyTerminationMode::Approximate;
+    fused_approx_config.early_termination_threshold = 48;
+
+    AcceleratorConfig fixed_schedule_config = baseline_config;
+    fixed_schedule_config.broadcast_mode = BroadcastMode::SnapeaFixedSchedule;
+
+    const ModeResult baseline =
+        runMode("Mode A: Baseline Conv + ReLU", baseline_config, base_layer, reference_post_relu);
+    const ModeResult fused_exact = runMode(
+        "Mode B1: Fused Conv + Early Termination + ReLU (Exact)",
+        fused_exact_config,
+        base_layer,
+        reference_post_relu);
+    const ModeResult fused_approx = runMode(
+        "Mode B2: Fused Conv + Early Termination + ReLU (Approximate)",
+        fused_approx_config,
+        base_layer,
+        reference_post_relu);
+    const ModeResult fixed_schedule = runMode(
+        "Mode C: Baseline Conv + ReLU + SnaPEA-like Fixed-Schedule Broadcast",
+        fixed_schedule_config,
+        base_layer,
+        reference_post_relu);
+
+    std::cout << "Hardware-Oriented CNN Accelerator Simulator\n";
+    std::cout << "===========================================\n";
+    std::cout << "Layer config: input=" << layer_config.input_channels << "x" << layer_config.input_height
+              << "x" << layer_config.input_width << ", kernel=" << layer_config.kernel_size << "x"
+              << layer_config.kernel_size << ", output_channels=" << layer_config.output_channels
+              << ", stride=" << layer_config.stride << ", padding=" << layer_config.padding << "\n\n";
+
+    if (common_config.print_input_output_tensors) {
+        printInt8Tensor3D("Input feature map (C x H x W)", base_layer.inputTensor());
+        std::cout << "\n";
+        printInt8Tensor4DWeights("Weight tensor (OC x IC x KY x KX)", base_layer.weightTensor());
+        if (layer_config.use_bias) {
+            printBiasTensor(base_layer.biasTensor());
+        }
+        std::cout << "\n";
+        printInt32Tensor3D("Reference convolution output (pre-ReLU)", reference_pre_relu);
+        std::cout << "\n";
+        printInt32Tensor3D("Reference output (post-ReLU)", reference_post_relu);
+        std::cout << "\n";
+        printInt32Tensor3D("Simulator output - Mode A (Baseline Conv + ReLU)", baseline.output);
+        std::cout << "\n";
+        printInt32Tensor3D("Simulator output - Mode B1 (Exact fused)", fused_exact.output);
+        std::cout << "\n";
+        printInt32Tensor3D("Simulator output - Mode B2 (Approx fused)", fused_approx.output);
+        std::cout << "\n";
+        printInt32Tensor3D("Simulator output - Mode C (Fixed-schedule broadcast)", fixed_schedule.output);
+        std::cout << "\n";
+    }
+
+    if (common_config.print_per_element_comparison) {
+        printPerElementComparison("Per-element comparison: Baseline vs Exact Fused",
+                                  reference_pre_relu,
+                                  reference_post_relu,
+                                  baseline.output,
+                                  fused_exact.output,
+                                  fused_exact.stats);
+        std::cout << "\n";
+        printPerElementComparison("Per-element comparison: Baseline vs Approximate Fused",
+                                  reference_pre_relu,
+                                  reference_post_relu,
+                                  baseline.output,
+                                  fused_approx.output,
+                                  fused_approx.stats);
+        std::cout << "\n";
+    }
+
+    printModeSummary(baseline);
+    std::cout << "\n";
+    printModeSummary(fused_exact);
+    std::cout << "\n";
+    printModeSummary(fused_approx);
+    std::cout << "\n";
+    printModeSummary(fixed_schedule);
+
+    const bool baseline_exact = baseline.error_metrics.total_mismatches == 0;
+    const bool fused_exact_correct = fused_exact.error_metrics.total_mismatches == 0;
+    const bool fixed_schedule_exact = fixed_schedule.error_metrics.total_mismatches == 0;
+
+    if (!baseline_exact || !fused_exact_correct || !fixed_schedule_exact) {
+        std::cout << "\nExact correctness check failed for baseline, exact fused, and/or fixed-schedule mode.\n";
+        return 1;
+    }
+
+    return 0;
+}
