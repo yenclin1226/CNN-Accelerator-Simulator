@@ -1,0 +1,28 @@
+# CNN Accelerator Simulator
+This project simulates a C++ CNN accelerator.
+
+## Build And Run
+1. Model Training
+```bash
+python3 training/train_mnist_cnn.py
+```
+After training, the bias and weights are written to `conv1_bias.txt` and `conv1_weights.txt`.
+
+2. Accelerator Simulation
+```bash
+g++ -std=c++17 -Iinclude src/*.cpp -o bitserial_sim.exe
+./bitserial_sim.exe
+```
+After the run finishes, the results are written to `experiment_report.txt`.
+
+## Main Run Switches
+1. The main experiment settings are in [src/main.cpp].
+
+2. The most important switches are:
+```cpp
+[614] const bool use_dataset_mode = true;  // true: using real mnist sample; false: using randomize data
+[615] const int dataset_sample_index = 0; // load the nth image to do testing
+[616] const std::string dataset_input_path = "mnist_test.csv";
+[617] const std::string dataset_weight_path = "training/conv1_weight.txt";
+[618] const std::string dataset_bias_path = "training/conv1_bias.txt";
+```
