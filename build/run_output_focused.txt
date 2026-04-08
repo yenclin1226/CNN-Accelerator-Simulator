@@ -1,0 +1,157 @@
+Focused CNN Accelerator Experiment
+==================================
+Layer config: input=3x5x5, kernel=3x3, output_channels=2, stride=1, padding=1
+Grouping baselines: Baseline-A=OutputChannelModulo, Baseline-B=TaskRoundRobin
+Broadcast policy: Demand-Driven Vote-Based
+Early termination mode: Exact only
+
+1. Baseline-A vs Baseline-B with ET Disabled
+============================================
+Baseline-A: Output-channel modulo grouping | ET Off
+  Grouping policy: OutputChannelModulo
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Total cycles: 2544
+  Completed tasks: 50
+  Lane occupancy: 28.17%
+  Multiplier utilization: 11.79%
+  Accumulator utilization: 11.79%
+  Memory stall ratio: 28.65%
+  Broadcast stall ratio: 16.92%
+  Broadcast mismatch idle ratio: 16.92%
+  Finished-lane idle ratio: 26.22%
+  Idle ratio: 71.83%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3556 / 3856
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Work stealing events: 32
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction per task: 1.0000
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Baseline-B: Task-id round-robin grouping | ET Off
+  Grouping policy: TaskRoundRobin
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Total cycles: 2738
+  Completed tasks: 50
+  Lane occupancy: 26.17%
+  Multiplier utilization: 10.96%
+  Accumulator utilization: 10.96%
+  Memory stall ratio: 30.43%
+  Broadcast stall ratio: 14.54%
+  Broadcast mismatch idle ratio: 14.54%
+  Finished-lane idle ratio: 28.82%
+  Idle ratio: 73.83%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3783 / 4083
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Work stealing events: 3
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction per task: 1.0000
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Effect of initial grouping imbalance fix only
+  Baseline-A: Output-channel modulo grouping | ET Off: cycles=2544, tasks_terminated_early=0, work_stealing=32
+  Baseline-B: Task-id round-robin grouping | ET Off: cycles=2738, tasks_terminated_early=0, work_stealing=3, cycle_ratio_vs_first=1.0763
+
+
+2. Baseline-A vs Baseline-B with Exact ET Enabled
+=================================================
+Baseline-A: Output-channel modulo grouping | Exact ET On
+  Grouping policy: OutputChannelModulo
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Total cycles: 2567
+  Completed tasks: 50
+  Lane occupancy: 26.93%
+  Multiplier utilization: 11.26%
+  Accumulator utilization: 11.26%
+  Memory stall ratio: 29.10%
+  Broadcast stall ratio: 16.56%
+  Broadcast mismatch idle ratio: 16.56%
+  Finished-lane idle ratio: 27.37%
+  Idle ratio: 73.07%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3448 / 3748
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Work stealing events: 32
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction per task: 0.9667
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Baseline-B: Task-id round-robin grouping | Exact ET On
+  Grouping policy: TaskRoundRobin
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Total cycles: 2423
+  Completed tasks: 50
+  Lane occupancy: 28.53%
+  Multiplier utilization: 11.93%
+  Accumulator utilization: 11.93%
+  Memory stall ratio: 33.74%
+  Broadcast stall ratio: 15.15%
+  Broadcast mismatch idle ratio: 15.15%
+  Finished-lane idle ratio: 22.53%
+  Idle ratio: 71.47%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3661 / 3961
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Work stealing events: 2
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction per task: 0.9667
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Effect of initial grouping imbalance fix under exact ET
+  Baseline-A: Output-channel modulo grouping | Exact ET On: cycles=2567, tasks_terminated_early=17, work_stealing=32
+  Baseline-B: Task-id round-robin grouping | Exact ET On: cycles=2423, tasks_terminated_early=17, work_stealing=2, cycle_ratio_vs_first=0.9439
+
+
+3. ET Benefit Within Each Grouping Policy
+=========================================
+Baseline-A: Output-channel modulo grouping
+  ET off cycles=2544, ET on cycles=2567, speedup=0.9910, tasks_terminated_early=17
+
+Baseline-B: Task-id round-robin grouping
+  ET off cycles=2738, ET on cycles=2423, speedup=1.1300, tasks_terminated_early=17
+

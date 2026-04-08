@@ -1,0 +1,278 @@
+Focused CNN Accelerator Experiment
+==================================
+Layer config: input=3x5x5, kernel=3x3, output_channels=2, stride=1, padding=1
+Grouping policies: OutputChannelModulo, TaskRoundRobin, ETAwareCostBalanced
+Broadcast policy: Demand-Driven Vote-Based
+Early termination mode: Exact only
+
+1. Grouping Policy Comparison with ET Disabled
+==============================================
+Baseline-A: OutputChannelModulo | ET Off
+  Grouping policy: OutputChannelModulo
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Total cycles: 2544
+  Completed tasks: 50
+  Lane occupancy: 28.17%
+  Multiplier utilization: 11.79%
+  Accumulator utilization: 11.79%
+  Memory stall ratio: 28.65%
+  Broadcast stall ratio: 16.92%
+  Broadcast mismatch idle ratio: 16.92%
+  Finished-lane idle ratio: 26.22%
+  Idle ratio: 71.83%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3556 / 3856
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Work stealing events: 32
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction per task: 1.0000
+  Avg queued predicted cost / group: [193.80, 189.53, 0.00, 0.00, 0.00, 0.00]
+  Queued predicted cost variance / group: [395.31, 427.40, 0.00, 0.00, 0.00, 0.00]
+  Completed tasks / group: [9, 9, 9, 8, 7, 8]
+  Active lane cycles / group: [4644, 4644, 4644, 4128, 3612, 4128]
+  Variance of group avg predicted cost: 8165.0659
+  Variance of completed tasks / group: 0.5556
+  Variance of active lane cycles / group: 147920.0000
+  Lane workload Jain fairness: 0.890313
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Baseline-B: TaskRoundRobin | ET Off
+  Grouping policy: TaskRoundRobin
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Total cycles: 2738
+  Completed tasks: 50
+  Lane occupancy: 26.17%
+  Multiplier utilization: 10.96%
+  Accumulator utilization: 10.96%
+  Memory stall ratio: 30.43%
+  Broadcast stall ratio: 14.54%
+  Broadcast mismatch idle ratio: 14.54%
+  Finished-lane idle ratio: 28.82%
+  Idle ratio: 73.83%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3783 / 4083
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Work stealing events: 3
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction per task: 1.0000
+  Avg queued predicted cost / group: [196.21, 196.13, 193.70, 185.26, 184.70, 192.88]
+  Queued predicted cost variance / group: [484.48, 590.55, 422.95, 285.51, 170.40, 370.44]
+  Completed tasks / group: [7, 10, 8, 7, 9, 9]
+  Active lane cycles / group: [3612, 5160, 4128, 3612, 4644, 4644]
+  Variance of group avg predicted cost: 22.5822
+  Variance of completed tasks / group: 1.2222
+  Variance of active lane cycles / group: 325424.0000
+  Lane workload Jain fairness: 0.890313
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+ETAwareCostBalanced | ET Off
+  Grouping policy: ETAwareCostBalanced
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Total cycles: 2731
+  Completed tasks: 50
+  Lane occupancy: 26.24%
+  Multiplier utilization: 10.98%
+  Accumulator utilization: 10.98%
+  Memory stall ratio: 30.10%
+  Broadcast stall ratio: 14.05%
+  Broadcast mismatch idle ratio: 14.05%
+  Finished-lane idle ratio: 29.58%
+  Idle ratio: 73.76%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3751 / 4051
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Work stealing events: 8
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction per task: 1.0000
+  Avg queued predicted cost / group: [166.65, 166.70, 182.22, 198.93, 195.42, 218.08]
+  Queued predicted cost variance / group: [58.00, 88.54, 1.26, 142.40, 131.03, 5.96]
+  Completed tasks / group: [9, 8, 7, 8, 7, 11]
+  Active lane cycles / group: [4644, 4128, 3612, 4128, 3612, 5676]
+  Variance of group avg predicted cost: 337.0841
+  Variance of completed tasks / group: 1.8889
+  Variance of active lane cycles / group: 502928.0000
+  Lane workload Jain fairness: 0.890313
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+TaskRoundRobin vs OutputChannelModulo (ET off)
+  Baseline-A: OutputChannelModulo | ET Off: cycles=2544, tasks_terminated_early=0, work_stealing=32
+  Baseline-B: TaskRoundRobin | ET Off: cycles=2738, tasks_terminated_early=0, work_stealing=3, cycle_ratio_vs_first=1.0763
+ETAwareCostBalanced vs OutputChannelModulo (ET off)
+  Baseline-A: OutputChannelModulo | ET Off: cycles=2544, tasks_terminated_early=0, work_stealing=32
+  ETAwareCostBalanced | ET Off: cycles=2731, tasks_terminated_early=0, work_stealing=8, cycle_ratio_vs_first=1.0735
+
+
+2. Grouping Policy Comparison with Exact ET Enabled
+===================================================
+Baseline-A: OutputChannelModulo | Exact ET On
+  Grouping policy: OutputChannelModulo
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Total cycles: 2567
+  Completed tasks: 50
+  Lane occupancy: 26.93%
+  Multiplier utilization: 11.26%
+  Accumulator utilization: 11.26%
+  Memory stall ratio: 29.10%
+  Broadcast stall ratio: 16.56%
+  Broadcast mismatch idle ratio: 16.56%
+  Finished-lane idle ratio: 27.37%
+  Idle ratio: 73.07%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3448 / 3748
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Work stealing events: 32
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction per task: 0.9667
+  Avg queued predicted cost / group: [193.80, 189.53, 0.00, 0.00, 0.00, 0.00]
+  Queued predicted cost variance / group: [395.31, 427.40, 0.00, 0.00, 0.00, 0.00]
+  Completed tasks / group: [10, 8, 9, 8, 9, 6]
+  Active lane cycles / group: [5030, 4120, 4412, 3675, 4575, 3073]
+  Variance of group avg predicted cost: 8165.0659
+  Variance of completed tasks / group: 1.5556
+  Variance of active lane cycles / group: 401680.9167
+  Lane workload Jain fairness: 0.894325
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Baseline-B: TaskRoundRobin | Exact ET On
+  Grouping policy: TaskRoundRobin
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Total cycles: 2423
+  Completed tasks: 50
+  Lane occupancy: 28.53%
+  Multiplier utilization: 11.93%
+  Accumulator utilization: 11.93%
+  Memory stall ratio: 33.74%
+  Broadcast stall ratio: 15.15%
+  Broadcast mismatch idle ratio: 15.15%
+  Finished-lane idle ratio: 22.53%
+  Idle ratio: 71.47%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3661 / 3961
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Work stealing events: 2
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction per task: 0.9667
+  Avg queued predicted cost / group: [196.21, 196.13, 193.70, 185.26, 184.70, 192.88]
+  Queued predicted cost variance / group: [484.48, 590.55, 422.95, 285.51, 170.40, 370.44]
+  Completed tasks / group: [7, 9, 8, 8, 9, 9]
+  Active lane cycles / group: [3608, 4594, 4124, 3580, 4590, 4389]
+  Variance of group avg predicted cost: 22.5822
+  Variance of completed tasks / group: 0.5556
+  Variance of active lane cycles / group: 177859.9167
+  Lane workload Jain fairness: 0.898347
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+ETAwareCostBalanced | Exact ET On
+  Grouping policy: ETAwareCostBalanced
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Total cycles: 2474
+  Completed tasks: 50
+  Lane occupancy: 27.94%
+  Multiplier utilization: 11.69%
+  Accumulator utilization: 11.69%
+  Memory stall ratio: 33.42%
+  Broadcast stall ratio: 14.80%
+  Broadcast mismatch idle ratio: 14.80%
+  Finished-lane idle ratio: 23.80%
+  Idle ratio: 72.06%
+  DRAM accesses / bytes: 251 / 401
+  On-chip accesses / bytes: 3639 / 3939
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Work stealing events: 10
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction per task: 0.9667
+  Avg queued predicted cost / group: [166.65, 166.70, 182.22, 198.93, 195.42, 218.08]
+  Queued predicted cost variance / group: [58.00, 88.54, 1.26, 142.40, 131.03, 5.96]
+  Completed tasks / group: [8, 8, 8, 9, 9, 8]
+  Active lane cycles / group: [3451, 4124, 4097, 4575, 4518, 4120]
+  Variance of group avg predicted cost: 337.0841
+  Variance of completed tasks / group: 0.2222
+  Variance of active lane cycles / group: 134832.9167
+  Lane workload Jain fairness: 0.896564
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+TaskRoundRobin vs OutputChannelModulo (Exact ET)
+  Baseline-A: OutputChannelModulo | Exact ET On: cycles=2567, tasks_terminated_early=17, work_stealing=32
+  Baseline-B: TaskRoundRobin | Exact ET On: cycles=2423, tasks_terminated_early=17, work_stealing=2, cycle_ratio_vs_first=0.9439
+ETAwareCostBalanced vs OutputChannelModulo (Exact ET)
+  Baseline-A: OutputChannelModulo | Exact ET On: cycles=2567, tasks_terminated_early=17, work_stealing=32
+  ETAwareCostBalanced | Exact ET On: cycles=2474, tasks_terminated_early=17, work_stealing=10, cycle_ratio_vs_first=0.9638
+
+
+3. ET Benefit Within Each Grouping Policy
+=========================================
+Baseline-A: OutputChannelModulo
+  ET off cycles=2544, ET on cycles=2567, speedup=0.9910, tasks_terminated_early=17
+
+Baseline-B: TaskRoundRobin
+  ET off cycles=2738, ET on cycles=2423, speedup=1.1300, tasks_terminated_early=17
+
+ETAwareCostBalanced
+  ET off cycles=2731, ET on cycles=2474, speedup=1.1039, tasks_terminated_early=17
+

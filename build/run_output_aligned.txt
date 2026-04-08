@@ -1,0 +1,389 @@
+Hardware-Oriented CNN Accelerator Simulator
+===========================================
+Layer config: input=3x5x5, kernel=3x3, output_channels=2, stride=1, padding=1
+
+Input feature map (C x H x W)
+  [c=0]
+      -3   2  -1   4   4
+       4  -4   2   0  -4
+       4   1  -3   3   4
+      -2   1  -4   3   2
+      -2   1  -1   2  -2
+  [c=1]
+       0   4   3  -4   3
+       0   3   1  -3  -1
+      -2   2  -2   4  -4
+      -4  -4  -3  -3  -2
+      -4   1   4  -2   3
+  [c=2]
+       4   3  -3   2  -4
+       1   0  -4   2   4
+       3   2   2   2   0
+       0   0  -4  -2   2
+       0   1   1  -1   0
+
+Weight tensor (OC x IC x KY x KX)
+  [oc=0, cin=0]
+      -2  -3   4
+       0  -4   4
+      -3  -2   1
+  [oc=0, cin=1]
+      -4   0  -2
+       4  -3  -4
+      -3  -2   2
+  [oc=0, cin=2]
+      -2   2  -4
+       3   3  -4
+      -1  -3  -1
+  [oc=1, cin=0]
+       4   4  -4
+      -4   0  -1
+      -4  -2   1
+  [oc=1, cin=1]
+       1   4   2
+       0   4  -1
+      -4   1  -1
+  [oc=1, cin=2]
+       2  -3   1
+       3   1   2
+      -4   3   4
+Bias tensor
+      14     9
+
+Reference convolution output (pre-ReLU)
+  [c=0]
+         9     8    50    24   -28
+       -32    14    -4    -4     0
+       -26    41    54    27    56
+        54    14    21    15   -39
+        48    -7    80    27    10
+  [c=1]
+         1    20    23    -5    30
+        -4     8    42   -11    23
+        45    26    12    87   -36
+         1    61   -36   -39    16
+       -43     3   -13   -25     9
+
+Reference output (post-ReLU)
+  [c=0]
+         9     8    50    24     0
+         0    14     0     0     0
+         0    41    54    27    56
+        54    14    21    15     0
+        48     0    80    27    10
+  [c=1]
+         1    20    23     0    30
+         0     8    42     0    23
+        45    26    12    87     0
+         1    61     0     0    16
+         0     3     0     0     9
+
+Simulator output - Mode A (Baseline Conv + ReLU)
+  [c=0]
+         9     8    50    24     0
+         0    14     0     0     0
+         0    41    54    27    56
+        54    14    21    15     0
+        48     0    80    27    10
+  [c=1]
+         1    20    23     0    30
+         0     8    42     0    23
+        45    26    12    87     0
+         1    61     0     0    16
+         0     3     0     0     9
+
+Simulator output - Mode B1 (Exact fused)
+  [c=0]
+         9     8    50    24     0
+         0    14     0     0     0
+         0    41    54    27    56
+        54    14    21    15     0
+        48     0    80    27    10
+  [c=1]
+         1    20    23     0    30
+         0     8    42     0    23
+        45    26    12    87     0
+         1    61     0     0    16
+         0     3     0     0     9
+
+Simulator output - Mode B2 (Approx fused)
+  [c=0]
+        28    32    56    38     0
+        11     0    36     4     0
+        16    29    98    43    72
+        46     0    17    31     0
+        18     1    44    46     7
+  [c=1]
+         9    21    32     0    38
+        22    48    78    13    47
+        17    26     0    47     0
+         5    19     0     0    11
+         1     0     3     0    33
+
+Simulator output - Mode C (Fixed-schedule broadcast)
+  [c=0]
+         9     8    50    24     0
+         0    14     0     0     0
+         0    41    54    27    56
+        54    14    21    15     0
+        48     0    80    27    10
+  [c=1]
+         1    20    23     0    30
+         0     8    42     0    23
+        45    26    12    87     0
+         1    61     0     0    16
+         0     3     0     0     9
+
+Per-element comparison: Baseline vs Exact Fused
+  oc oy ox | ref_pre ref_post baseline fused | ET procMAC skipMAC procBit skipBit | abs_err
+   0  0  0 |       9        9        9     9 | N      27       0     216       0 |       0
+   0  0  1 |       8        8        8     8 | N      27       0     216       0 |       0
+   0  0  2 |      50       50       50    50 | N      27       0     216       0 |       0
+   0  0  3 |      24       24       24    24 | N      27       0     216       0 |       0
+   0  0  4 |     -28        0        0     0 | Y      27       0     214       2 |       0
+   0  1  0 |     -32        0        0     0 | Y      26       1     206      10 |       0
+   0  1  1 |      14       14       14    14 | N      27       0     216       0 |       0
+   0  1  2 |      -4        0        0     0 | Y      27       0     214       2 |       0
+   0  1  3 |      -4        0        0     0 | Y      27       0     214       2 |       0
+   0  1  4 |       0        0        0     0 | Y      22       5     176      40 |       0
+   0  2  0 |     -26        0        0     0 | Y      27       0     214       2 |       0
+   0  2  1 |      41       41       41    41 | N      27       0     216       0 |       0
+   0  2  2 |      54       54       54    54 | N      27       0     216       0 |       0
+   0  2  3 |      27       27       27    27 | N      27       0     216       0 |       0
+   0  2  4 |      56       56       56    56 | N      27       0     216       0 |       0
+   0  3  0 |      54       54       54    54 | N      27       0     216       0 |       0
+   0  3  1 |      14       14       14    14 | N      27       0     216       0 |       0
+   0  3  2 |      21       21       21    21 | N      27       0     216       0 |       0
+   0  3  3 |      15       15       15    15 | N      27       0     216       0 |       0
+   0  3  4 |     -39        0        0     0 | Y      26       1     206      10 |       0
+   0  4  0 |      48       48       48    48 | N      27       0     216       0 |       0
+   0  4  1 |      -7        0        0     0 | Y      27       0     214       2 |       0
+   0  4  2 |      80       80       80    80 | N      27       0     216       0 |       0
+   0  4  3 |      27       27       27    27 | N      27       0     216       0 |       0
+   0  4  4 |      10       10       10    10 | N      27       0     216       0 |       0
+   1  0  0 |       1        1        1     1 | N      27       0     216       0 |       0
+   1  0  1 |      20       20       20    20 | N      27       0     216       0 |       0
+   1  0  2 |      23       23       23    23 | N      27       0     216       0 |       0
+   1  0  3 |      -5        0        0     0 | Y      27       0     214       2 |       0
+   1  0  4 |      30       30       30    30 | N      27       0     216       0 |       0
+   1  1  0 |      -4        0        0     0 | Y      27       0     214       2 |       0
+   1  1  1 |       8        8        8     8 | N      27       0     216       0 |       0
+   1  1  2 |      42       42       42    42 | N      27       0     216       0 |       0
+   1  1  3 |     -11        0        0     0 | Y      27       0     214       2 |       0
+   1  1  4 |      23       23       23    23 | N      27       0     216       0 |       0
+   1  2  0 |      45       45       45    45 | N      27       0     216       0 |       0
+   1  2  1 |      26       26       26    26 | N      27       0     216       0 |       0
+   1  2  2 |      12       12       12    12 | N      27       0     216       0 |       0
+   1  2  3 |      87       87       87    87 | N      27       0     216       0 |       0
+   1  2  4 |     -36        0        0     0 | Y      26       1     206      10 |       0
+   1  3  0 |       1        1        1     1 | N      27       0     216       0 |       0
+   1  3  1 |      61       61       61    61 | N      27       0     216       0 |       0
+   1  3  2 |     -36        0        0     0 | Y      25       2     198      18 |       0
+   1  3  3 |     -39        0        0     0 | Y      26       1     206      10 |       0
+   1  3  4 |      16       16       16    16 | N      27       0     216       0 |       0
+   1  4  0 |     -43        0        0     0 | Y       5      22      38     178 |       0
+   1  4  1 |       3        3        3     3 | N      27       0     216       0 |       0
+   1  4  2 |     -13        0        0     0 | Y      27       0     214       2 |       0
+   1  4  3 |     -25        0        0     0 | Y      15      12     120      96 |       0
+   1  4  4 |       9        9        9     9 | N      27       0     216       0 |       0
+
+Per-element comparison: Baseline vs Approximate Fused
+  oc oy ox | ref_pre ref_post baseline fused | ET procMAC skipMAC procBit skipBit | abs_err
+   0  0  0 |       9        9        9    28 | Y      17      10     135      81 |      19
+   0  0  1 |       8        8        8    32 | Y      21       6     167      49 |      24
+   0  0  2 |      50       50       50    56 | Y      19       8     152      64 |       6
+   0  0  3 |      24       24       24    38 | Y      22       5     175      41 |      14
+   0  0  4 |     -28        0        0     0 | Y      13      14     103     113 |       0
+   0  1  0 |     -32        0        0    11 | Y      22       5     175      41 |      11
+   0  1  1 |      14       14       14     0 | Y      22       5     176      40 |      14
+   0  1  2 |      -4        0        0    36 | Y      23       4     182      34 |      36
+   0  1  3 |      -4        0        0     4 | Y      22       5     176      40 |       4
+   0  1  4 |       0        0        0     0 | Y      21       6     167      49 |       0
+   0  2  0 |     -26        0        0    16 | Y      18       9     143      73 |      16
+   0  2  1 |      41       41       41    29 | Y      19       8     152      64 |      12
+   0  2  2 |      54       54       54    98 | Y      23       4     182      34 |      44
+   0  2  3 |      27       27       27    43 | Y      22       5     176      40 |      16
+   0  2  4 |      56       56       56    72 | Y      20       7     159      57 |      16
+   0  3  0 |      54       54       54    46 | Y      18       9     143      73 |       8
+   0  3  1 |      14       14       14     0 | Y      22       5     176      40 |      14
+   0  3  2 |      21       21       21    17 | Y      23       4     182      34 |       4
+   0  3  3 |      15       15       15    31 | Y      21       6     168      48 |      16
+   0  3  4 |     -39        0        0     0 | Y      18       9     144      72 |       0
+   0  4  0 |      48       48       48    18 | Y       1      26       6     210 |      30
+   0  4  1 |      -7        0        0     1 | Y      23       4     182      34 |       1
+   0  4  2 |      80       80       80    44 | Y      22       5     175      41 |      36
+   0  4  3 |      27       27       27    46 | Y      22       5     175      41 |      19
+   0  4  4 |      10       10       10     7 | Y       6      21      47     169 |       3
+   1  0  0 |       1        1        1     9 | Y       1      26       1     215 |       8
+   1  0  1 |      20       20       20    21 | Y      12      15      96     120 |       1
+   1  0  2 |      23       23       23    32 | Y      18       9     144      72 |       9
+   1  0  3 |      -5        0        0     0 | Y      11      16      88     128 |       0
+   1  0  4 |      30       30       30    38 | Y      14      13     112     104 |       8
+   1  1  0 |      -4        0        0    22 | Y       8      19      63     153 |      22
+   1  1  1 |       8        8        8    48 | Y      23       4     182      34 |      40
+   1  1  2 |      42       42       42    78 | Y      23       4     182      34 |      36
+   1  1  3 |     -11        0        0    13 | Y      23       4     182      34 |      13
+   1  1  4 |      23       23       23    47 | Y      21       6     167      49 |      24
+   1  2  0 |      45       45       45    17 | Y       5      22      38     178 |      28
+   1  2  1 |      26       26       26    26 | Y      21       6     167      49 |       0
+   1  2  2 |      12       12       12     0 | Y      19       8     152      64 |      12
+   1  2  3 |      87       87       87    47 | Y      24       3     190      26 |      40
+   1  2  4 |     -36        0        0     0 | Y      22       5     175      41 |       0
+   1  3  0 |       1        1        1     5 | Y       5      22      38     178 |       4
+   1  3  1 |      61       61       61    19 | Y      22       5     175      41 |      42
+   1  3  2 |     -36        0        0     0 | Y      14      13     112     104 |       0
+   1  3  3 |     -39        0        0     0 | Y      23       4     182      34 |       0
+   1  3  4 |      16       16       16    11 | Y       8      19      63     153 |       5
+   1  4  0 |     -43        0        0     1 | Y       3      24      22     194 |       1
+   1  4  1 |       3        3        3     0 | Y       5      22      38     178 |       3
+   1  4  2 |     -13        0        0     3 | Y       6      21      47     169 |       3
+   1  4  3 |     -25        0        0     0 | Y       5      22      38     178 |       0
+   1  4  4 |       9        9        9    33 | Y       2      25      14     202 |      24
+
+Mode A: Baseline Conv + ReLU Summary
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Cycles: 2544
+  Completed tasks: 50
+  Lane occupancy (active_lane_cycles / total_lane_cycles): 28.17%
+  Multiplier utilization (multiplier_active_cycles / total_lane_cycles): 11.79%
+  Accumulator utilization (accumulator_active_cycles / total_lane_cycles): 11.79%
+  Memory stall ratio (stall_memory_cycles / total_lane_cycles): 28.65%
+  Broadcast stall ratio (stall_broadcast_cycles / total_lane_cycles): 16.92%
+  Broadcast mismatch idle ratio (idle_broadcast_mismatch_cycles / total_lane_cycles): 16.92%
+  Finished-lane idle ratio (idle_finished_cycles / total_lane_cycles): 26.22%
+  Idle ratio (idle_lane_cycles / total_lane_cycles): 71.83%
+  Active lane cycles (occupancy numerator): 25800
+  Stall cycles (memory): 26242
+  Stall cycles (broadcast): 15495
+  Idle cycles (broadcast mismatch): 15495
+  Idle cycles (lane already finished): 24011
+  DRAM accesses: 251 (bytes=401)
+  On-chip accesses: 3556 (bytes=3856)
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Memory requests avoided (reuse): 4443
+  Bytes saved due to reuse: 4443
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction/task: 1.0000
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Mode B1: Fused Conv + Early Termination + ReLU (Exact) Summary
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Exact)
+  Cycles: 2567
+  Completed tasks: 50
+  Lane occupancy (active_lane_cycles / total_lane_cycles): 26.93%
+  Multiplier utilization (multiplier_active_cycles / total_lane_cycles): 11.26%
+  Accumulator utilization (accumulator_active_cycles / total_lane_cycles): 11.26%
+  Memory stall ratio (stall_memory_cycles / total_lane_cycles): 29.10%
+  Broadcast stall ratio (stall_broadcast_cycles / total_lane_cycles): 16.56%
+  Broadcast mismatch idle ratio (idle_broadcast_mismatch_cycles / total_lane_cycles): 16.56%
+  Finished-lane idle ratio (idle_finished_cycles / total_lane_cycles): 27.37%
+  Idle ratio (idle_lane_cycles / total_lane_cycles): 73.07%
+  Active lane cycles (occupancy numerator): 24885
+  Stall cycles (memory): 26896
+  Stall cycles (broadcast): 15300
+  Idle cycles (broadcast mismatch): 15300
+  Idle cycles (lane already finished): 25295
+  DRAM accesses: 251 (bytes=401)
+  On-chip accesses: 3448 (bytes=3748)
+  Activation reuse hits/misses: 1158/147
+  Weight reuse hits/misses: 1251/54
+  Memory requests avoided (reuse): 4281
+  Bytes saved due to reuse: 4281
+  Tasks terminated early: 17
+  Output elements terminated early: 17
+  MACs skipped: 45
+  Bit-steps skipped: 390
+  Estimated ET cycles saved: 480
+  Average processed fraction/task: 0.9667
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
+
+Mode B2: Fused Conv + Early Termination + ReLU (Approximate) Summary
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: Demand-Driven Vote-Based
+  Pipeline mode: Fused Conv + ET + ReLU
+  Early termination: Enabled (Approximate)
+  Cycles: 1710
+  Completed tasks: 50
+  Lane occupancy (active_lane_cycles / total_lane_cycles): 25.30%
+  Multiplier utilization (multiplier_active_cycles / total_lane_cycles): 10.54%
+  Accumulator utilization (accumulator_active_cycles / total_lane_cycles): 10.54%
+  Memory stall ratio (stall_memory_cycles / total_lane_cycles): 36.15%
+  Broadcast stall ratio (stall_broadcast_cycles / total_lane_cycles): 15.16%
+  Broadcast mismatch idle ratio (idle_broadcast_mismatch_cycles / total_lane_cycles): 15.16%
+  Finished-lane idle ratio (idle_finished_cycles / total_lane_cycles): 23.33%
+  Idle ratio (idle_lane_cycles / total_lane_cycles): 74.70%
+  Active lane cycles (occupancy numerator): 15576
+  Stall cycles (memory): 22253
+  Stall cycles (broadcast): 9335
+  Idle cycles (broadcast mismatch): 9335
+  Idle cycles (lane already finished): 14360
+  DRAM accesses: 239 (bytes=389)
+  On-chip accesses: 2349 (bytes=2649)
+  Activation reuse hits/misses: 680/138
+  Weight reuse hits/misses: 767/51
+  Memory requests avoided (reuse): 2470
+  Bytes saved due to reuse: 2470
+  Tasks terminated early: 50
+  Output elements terminated early: 50
+  MACs skipped: 532
+  Bit-steps skipped: 4314
+  Estimated ET cycles saved: 5378
+  Average processed fraction/task: 0.6059
+  Error mismatches: 41/50
+  Max abs error: 44
+  Mean abs error: 13.720000
+  Mean relative error: 2.932850
+
+Mode C: Baseline Conv + ReLU + SnaPEA-like Fixed-Schedule Broadcast Summary
+  Execution mode: INT8 Bit-Serial
+  Broadcast mode: SnaPEA-like Fixed Schedule
+  Pipeline mode: Baseline Conv + ReLU
+  Early termination: Disabled
+  Cycles: 199808
+  Completed tasks: 50
+  Lane occupancy (active_lane_cycles / total_lane_cycles): 0.36%
+  Multiplier utilization (multiplier_active_cycles / total_lane_cycles): 0.15%
+  Accumulator utilization (accumulator_active_cycles / total_lane_cycles): 0.15%
+  Memory stall ratio (stall_memory_cycles / total_lane_cycles): 0.27%
+  Broadcast stall ratio (stall_broadcast_cycles / total_lane_cycles): 68.66%
+  Broadcast mismatch idle ratio (idle_broadcast_mismatch_cycles / total_lane_cycles): 68.66%
+  Finished-lane idle ratio (idle_finished_cycles / total_lane_cycles): 30.71%
+  Idle ratio (idle_lane_cycles / total_lane_cycles): 99.64%
+  Active lane cycles (occupancy numerator): 25800
+  Stall cycles (memory): 19195
+  Stall cycles (broadcast): 4938843
+  Idle cycles (broadcast mismatch): 4938843
+  Idle cycles (lane already finished): 2209214
+  DRAM accesses: 251 (bytes=401)
+  On-chip accesses: 3580 (bytes=3880)
+  Activation reuse hits/misses: 1203/147
+  Weight reuse hits/misses: 1296/54
+  Memory requests avoided (reuse): 4419
+  Bytes saved due to reuse: 4419
+  Tasks terminated early: 0
+  Output elements terminated early: 0
+  MACs skipped: 0
+  Bit-steps skipped: 0
+  Estimated ET cycles saved: 0
+  Average processed fraction/task: 1.0000
+  Error mismatches: 0/50
+  Max abs error: 0
+  Mean abs error: 0.000000
+  Mean relative error: 0.000000
