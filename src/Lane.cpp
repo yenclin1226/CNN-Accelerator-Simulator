@@ -92,6 +92,10 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
                 return std::nullopt;
             }
 
+            if (skipCurrentZeroWorkIfPossible(config)) {
+                return std::nullopt;
+            }
+
             activation_ready_cycle_ =
                 memory.requestActivation(group_id, current_op_->activation_key, current_cycle);
             weight_ready_cycle_ = memory.requestWeight(group_id, current_op_->weight_key, current_cycle);
@@ -116,10 +120,18 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
                 return std::nullopt;
             }
 
+            const int demanded_bit = demandedBitIndex(config);
+            if (config.execution_mode == ExecutionMode::Int8BitSerial && demanded_bit < 0) {
+                task_reg_->setStatus(TaskStatus::Executing);
+                state_ = LaneState::FETCH_NEXT_SIGNIFICANT_OP;
+                ++active_cycles_;
+                return std::nullopt;
+            }
+
             BroadcastDemand demand;
             demand.weight_key = current_op_->weight_key;
             demand.required_bit =
-                (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : currentBitIndex(config);
+                (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : demanded_bit;
             if (!broadcaster.isDemandInPayload(demand)) {
                 ++idle_cycles_;
                 ++stall_broadcast_cycles_;
@@ -143,6 +155,12 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
             if (!current_mac_counted_) {
                 task_reg_->markMacStarted();
                 current_mac_counted_ = true;
+            }
+
+            if (finishCurrentMacIfBitColumnExhausted(config)) {
+                state_ = LaneState::CHECK_TERMINATION;
+                ++active_cycles_;
+                return std::nullopt;
             }
 
             if (config.execution_mode == ExecutionMode::Int8BitParallel) {
@@ -188,9 +206,32 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
                 return std::nullopt;
             }
 
+            if (finishCurrentMacIfBitColumnExhausted(config)) {
+                state_ = LaneState::CHECK_TERMINATION;
+                ++active_cycles_;
+                return std::nullopt;
+            }
+
+            const int demanded_bit = demandedBitIndex(config);
+            if (demanded_bit < 0) {
+                state_ = LaneState::CHECK_TERMINATION;
+                ++active_cycles_;
+                return std::nullopt;
+            }
+
+            const int target_cursor =
+                config.enable_msb_first ? (7 - demanded_bit) : demanded_bit;
+            if (target_cursor > serial_step_in_op_) {
+                const std::size_t skipped_steps =
+                    static_cast<std::size_t>(target_cursor - serial_step_in_op_);
+                task_reg_->skipBitStepsInCurrentMac(skipped_steps);
+                processed_bits_in_current_op_ += skipped_steps;
+                serial_step_in_op_ = target_cursor;
+            }
+
             BroadcastDemand demand;
             demand.weight_key = current_op_->weight_key;
-            demand.required_bit = currentBitIndex(config);
+            demand.required_bit = demanded_bit;
             if (!broadcaster.isDemandInPayload(demand)) {
                 ++idle_cycles_;
                 ++stall_broadcast_cycles_;
@@ -200,7 +241,7 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
                 return std::nullopt;
             }
 
-            const int bit_index = currentBitIndex(config);
+            const int bit_index = demanded_bit;
             const std::int32_t bit_contribution =
                 current_op_->bit_contribution[static_cast<std::size_t>(bit_index)];
             task_reg_->markBitProcessed(bit_contribution);
@@ -235,7 +276,8 @@ std::optional<Task> Lane::step(std::uint64_t current_cycle,
 
             if (terminate_now) {
                 task_reg_->setEarlyTerminated(true);
-                task_reg_->finalizeSkippedWorkOnEarlyTermination();
+                task_reg_->finalizeSkippedWorkOnEarlyTermination(
+                    config.execution_mode, current_mac_counted_, processed_bits_in_current_op_);
                 state_ = LaneState::APPLY_RELU;
                 return std::nullopt;
             }
@@ -317,18 +359,27 @@ std::optional<BroadcastDemand> Lane::broadcastDemand(std::uint64_t current_cycle
             return std::nullopt;
         }
 
+        const int demanded_bit = demandedBitIndex(config);
+        if (config.execution_mode == ExecutionMode::Int8BitSerial && demanded_bit < 0) {
+            return std::nullopt;
+        }
+
         BroadcastDemand demand;
         demand.weight_key = current_op_->weight_key;
         demand.required_bit =
-            (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : currentBitIndex(config);
+            (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : demanded_bit;
         return demand;
     }
 
     if (state_ == LaneState::MULTIPLY_OR_SERIAL_STEP &&
         config.execution_mode == ExecutionMode::Int8BitSerial && serial_step_in_op_ < 8) {
+        const int demanded_bit = demandedBitIndex(config);
+        if (demanded_bit < 0) {
+            return std::nullopt;
+        }
         BroadcastDemand demand;
         demand.weight_key = current_op_->weight_key;
-        demand.required_bit = currentBitIndex(config);
+        demand.required_bit = demanded_bit;
         return demand;
     }
 
@@ -403,12 +454,48 @@ std::uint64_t Lane::bitStepsExecuted() const {
     return bit_steps_executed_;
 }
 
+std::uint64_t Lane::skippedMacsTotal() const {
+    return skipped_macs_total_;
+}
+
+std::uint64_t Lane::skippedMacsEtOnly() const {
+    return skipped_macs_et_only_;
+}
+
+std::uint64_t Lane::skippedMacsReactiveOnly() const {
+    return skipped_macs_reactive_only_;
+}
+
+std::uint64_t Lane::skippedMacsProactiveOnly() const {
+    return skipped_macs_proactive_only_;
+}
+
+std::uint64_t Lane::skippedMacsZeroOnly() const {
+    return skipped_macs_zero_only_;
+}
+
 std::uint64_t Lane::skippedMacs() const {
-    return skipped_macs_;
+    return skippedMacsTotal();
+}
+
+std::uint64_t Lane::skippedBitStepsTotal() const {
+    return skipped_bit_steps_total_;
+}
+
+std::uint64_t Lane::skippedBitStepsEtOnly() const {
+    return skipped_bit_steps_et_only_;
+}
+
+std::uint64_t Lane::skippedBitStepsBitColumnOnly() const {
+    return skipped_bit_steps_bit_column_only_;
 }
 
 std::uint64_t Lane::skippedBitSteps() const {
-    return skipped_bit_steps_;
+    return skippedBitStepsTotal();
+}
+
+std::uint64_t Lane::zeroRunEvents() const {
+    return zero_run_events_;
 }
 
 std::uint64_t Lane::estimatedCyclesSavedByEarlyTermination() const {
@@ -439,10 +526,25 @@ std::optional<Task> Lane::stepScheduleDriven(std::uint64_t current_cycle,
         }
     }
 
+    if (config.execution_mode == ExecutionMode::Int8BitSerial) {
+        const int demanded_bit = demandedBitIndex(config);
+        if (demanded_bit < 0) {
+            task_reg_->setStatus(TaskStatus::Executing);
+            if (!current_mac_counted_) {
+                task_reg_->markMacStarted();
+                current_mac_counted_ = true;
+            }
+            if (finishCurrentMacIfBitColumnExhausted(config)) {
+                ++active_cycles_;
+                return finalizeScheduleDrivenProgress(config);
+            }
+        }
+    }
+
     BroadcastDemand demand;
     demand.weight_key = current_op_->weight_key;
     demand.required_bit =
-        (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : currentBitIndex(config);
+        (config.execution_mode == ExecutionMode::Int8BitParallel) ? -1 : demandedBitIndex(config);
     if (!broadcaster.isDemandInPayload(demand)) {
         ++idle_cycles_;
         ++stall_broadcast_cycles_;
@@ -471,7 +573,28 @@ std::optional<Task> Lane::stepScheduleDriven(std::uint64_t current_cycle,
         task_reg_->advanceToNextOp();
         current_op_ = task_reg_->currentOp();
     } else {
-        const int bit_index = currentBitIndex(config);
+        if (finishCurrentMacIfBitColumnExhausted(config)) {
+            ++active_cycles_;
+            return finalizeScheduleDrivenProgress(config);
+        }
+
+        const int demanded_bit = demandedBitIndex(config);
+        if (demanded_bit < 0) {
+            ++active_cycles_;
+            return finalizeScheduleDrivenProgress(config);
+        }
+
+        const int target_cursor =
+            config.enable_msb_first ? (7 - demanded_bit) : demanded_bit;
+        if (target_cursor > serial_step_in_op_) {
+            const std::size_t skipped_steps =
+                static_cast<std::size_t>(target_cursor - serial_step_in_op_);
+            task_reg_->skipBitStepsInCurrentMac(skipped_steps);
+            processed_bits_in_current_op_ += skipped_steps;
+            serial_step_in_op_ = target_cursor;
+        }
+
+        const int bit_index = demanded_bit;
         const std::int32_t bit_contribution =
             current_op_->bit_contribution[static_cast<std::size_t>(bit_index)];
         task_reg_->markBitProcessed(bit_contribution);
@@ -505,7 +628,8 @@ std::optional<Task> Lane::finalizeScheduleDrivenProgress(const LaneExecutionConf
 
     if (terminate_now) {
         task_reg_->setEarlyTerminated(true);
-        task_reg_->finalizeSkippedWorkOnEarlyTermination();
+        task_reg_->finalizeSkippedWorkOnEarlyTermination(
+            config.execution_mode, current_mac_counted_, processed_bits_in_current_op_);
         state_ = LaneState::APPLY_RELU;
         return std::nullopt;
     }
@@ -529,6 +653,66 @@ int Lane::currentBitIndex(const LaneExecutionConfig& config) const {
         return 7 - serial_step_in_op_;
     }
     return serial_step_in_op_;
+}
+
+int Lane::demandedBitIndex(const LaneExecutionConfig& config) const {
+    if (config.execution_mode != ExecutionMode::Int8BitSerial) {
+        return -1;
+    }
+    if (!config.enable_bit_column_skip || !task_reg_ || !current_op_) {
+        return currentBitIndex(config);
+    }
+    return task_reg_->nextUsefulBitIndex(serial_step_in_op_, config.enable_msb_first);
+}
+
+bool Lane::skipCurrentZeroWorkIfPossible(const LaneExecutionConfig& config) {
+    if (config.execution_mode != ExecutionMode::Int8BitSerial || !task_reg_ || !current_op_) {
+        return false;
+    }
+    if (!task_reg_->currentOpIsZeroProduct()) {
+        return false;
+    }
+
+    task_reg_->setStatus(TaskStatus::Executing);
+    if (config.enable_proactive_zero_run_skip &&
+        task_reg_->currentOpCanRunProactiveZeroSkip(config.zero_run_order_mode)) {
+        task_reg_->skipZeroRun(config.zero_run_order_mode);
+    } else if (config.enable_reactive_zero_skip) {
+        task_reg_->skipCurrentOpZeroOnly();
+    } else {
+        return false;
+    }
+
+    current_op_ = task_reg_->currentOp();
+    state_ = LaneState::CHECK_TERMINATION;
+    ++active_cycles_;
+    return true;
+}
+
+bool Lane::finishCurrentMacIfBitColumnExhausted(const LaneExecutionConfig& config) {
+    if (config.execution_mode != ExecutionMode::Int8BitSerial || !config.enable_bit_column_skip ||
+        !task_reg_ || !current_op_ || !current_mac_counted_) {
+        return false;
+    }
+
+    if (task_reg_->nextUsefulBitIndex(serial_step_in_op_, config.enable_msb_first) >= 0) {
+        return false;
+    }
+
+    if (processed_bits_in_current_op_ < 8U) {
+        const std::size_t skipped_steps = 8U - processed_bits_in_current_op_;
+        task_reg_->skipBitStepsInCurrentMac(skipped_steps);
+        processed_bits_in_current_op_ = 8U;
+        serial_step_in_op_ = 8;
+    }
+
+    ++macs_executed_;
+    task_reg_->advanceToNextOp();
+    current_op_ = task_reg_->currentOp();
+    current_mac_counted_ = false;
+    serial_step_in_op_ = 0;
+    processed_bits_in_current_op_ = 0;
+    return true;
 }
 
 bool Lane::shouldEarlyTerminate(const Task& task, const LaneExecutionConfig& config) const {
@@ -567,11 +751,21 @@ std::optional<Task> Lane::finalizeCompletedTask() {
 
     if (finished.earlyTerminated()) {
         ++early_terminated_tasks_;
-        skipped_macs_ += static_cast<std::uint64_t>(finished.skippedMacs());
-        skipped_bit_steps_ += static_cast<std::uint64_t>(finished.skippedBitSteps());
         estimated_cycles_saved_et_ +=
-            static_cast<std::uint64_t>(finished.skippedBitSteps() + finished.skippedMacs() * 2U);
+            static_cast<std::uint64_t>(finished.skippedBitStepsEtOnly() +
+                                       finished.skippedMacsEtOnly() * 2U);
     }
+
+    skipped_macs_total_ += static_cast<std::uint64_t>(finished.skippedMacsTotal());
+    skipped_macs_et_only_ += static_cast<std::uint64_t>(finished.skippedMacsEtOnly());
+    skipped_macs_reactive_only_ += static_cast<std::uint64_t>(finished.skippedMacsReactiveOnly());
+    skipped_macs_proactive_only_ += static_cast<std::uint64_t>(finished.skippedMacsProactiveOnly());
+    skipped_macs_zero_only_ += static_cast<std::uint64_t>(finished.skippedMacsZeroOnly());
+    skipped_bit_steps_total_ += static_cast<std::uint64_t>(finished.skippedBitStepsTotal());
+    skipped_bit_steps_et_only_ += static_cast<std::uint64_t>(finished.skippedBitStepsEtOnly());
+    skipped_bit_steps_bit_column_only_ +=
+        static_cast<std::uint64_t>(finished.skippedBitStepsBitColumnOnly());
+    zero_run_events_ += static_cast<std::uint64_t>(finished.zeroRunEvents());
 
     if (finished.totalMacs() == 0U) {
         cumulative_processed_fraction_ += 1.0;

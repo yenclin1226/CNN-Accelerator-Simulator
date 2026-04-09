@@ -1,0 +1,28 @@
+Section 1: Benchmark Configuration
+==================================
+mode=detailed
+suite_tiers=extended
+et_mode=paired
+reactive_zero_skip=On
+proactive_zero_run_skip=On
+zero_run_order_mode=kernel
+bit_column_skip=On
+warmup_iterations=0
+timed_repetitions=1
+grouping_policies=ETAwareCostBalancedMemoryAware
+scenario_count=1
+exactness_pass=PASS
+primary_invariants_pass=PASS
+
+Section 2: Detailed Primary Metrics
+===================================
+scenario | grouping_policy | et_enabled | cycles_mean | wall_median_ms | throughput_macs_per_cycle | lane_occupancy | multiplier_utilization | accumulator_utilization | memory_stall_ratio | broadcast_stall_ratio | dram_bytes | onchip_buffer_bytes | activation_reuse_hits | activation_reuse_misses | weight_reuse_hits | weight_reuse_misses | memory_requests_avoided | work_stealing_events | tasks_terminated_early | output_elements_terminated_early | macs_skipped_total | macs_skipped_et_only | macs_skipped_reactive_only | macs_skipped_proactive_only | macs_skipped_zero_only | bit_steps_skipped_total | bit_steps_skipped_et_only | bit_steps_skipped_bit_column_only | zero_run_events | average_processed_fraction_per_task | mismatches
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalancedMemoryAware | Off | 3158821.000 | 92528.656588 | 0.559319 | 0.109946 | 0.019439 | 0.019439 | 0.886722 | 0.002576 | 2643196 | 6802658 | 73132 | 1693658 | 882788 | 884002 | 1351494 | 8630 | 0 | 0 | 592506 | 0 | 366808 | 225698 | 592506 | 11923756 | 0 | 11923756 | 116068 | 0.748863 | 0
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalancedMemoryAware | On | 2162070.000 | 65121.995821 | 0.552313 | 0.108309 | 0.019491 | 0.019491 | 0.888174 | 0.002625 | 1861138 | 4672620 | 59345 | 1139598 | 542939 | 656004 | 856508 | 7214 | 7969 | 7969 | 1160353 | 855974 | 187739 | 116640 | 304379 | 14922254 | 6853652 | 8068602 | 59720 | 0.508178 | 0
+
+Section 3: Secondary Diagnostics
+================================
+scenario | grouping_policy | et_enabled | jain_fairness | variance_group_completed_tasks | variance_group_active_lane_cycles | estimated_cycles_saved_early_termination | processed_fraction_p10 | processed_fraction_p50 | processed_fraction_p90 | mean_skipped_macs_per_terminated_task
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalancedMemoryAware | Off | 0.999947 | 4579.222222 | 223010355.000000 | 0 | 0.748863 | 0.748863 | 0.748863 | 0.000000
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalancedMemoryAware | On | 0.999988 | 271052.888889 | 17480209.805556 | 8565600 | 0.508178 | 0.508178 | 0.508178 | 107.412975
+

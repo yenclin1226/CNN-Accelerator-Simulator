@@ -141,10 +141,14 @@ int main() {
             expect(row.secondary.processed_fraction_percentiles.p10 >= 0.0 &&
                        row.secondary.processed_fraction_percentiles.p90 <= 1.0,
                    "detailed mode ET processed fraction percentiles out of range");
+            expect(row.macs_skipped_total >= row.macs_skipped_et_only,
+                   "detailed mode MAC skip totals must dominate ET-only counts");
+            expect(row.bit_steps_skipped_total >= row.bit_steps_skipped_et_only,
+                   "detailed mode bit-step totals must dominate ET-only counts");
             if (row.dram_bytes > 0U || row.onchip_buffer_bytes > 0U) {
                 saw_nonzero_memory_traffic = true;
             }
-            if (row.early_termination_enabled && row.macs_skipped > 0U) {
+            if (row.early_termination_enabled && row.macs_skipped_et_only > 0U) {
                 saw_nonzero_et_skips = true;
             }
         }

@@ -34,9 +34,14 @@ int main() {
             expect(row.tasks_terminated_early == 0U, "ET-off row reported terminated tasks");
             expect(row.output_elements_terminated_early == 0U,
                    "ET-off row reported terminated outputs");
-            expect(row.macs_skipped == 0U, "ET-off row reported skipped MACs");
-            expect(row.bit_steps_skipped == 0U, "ET-off row reported skipped bit steps");
+            expect(row.macs_skipped_et_only == 0U, "ET-off row reported ET-only skipped MACs");
+            expect(row.bit_steps_skipped_et_only == 0U,
+                   "ET-off row reported ET-only skipped bit steps");
         }
+        expect(row.macs_skipped_total >= row.macs_skipped_et_only,
+               "aggregate row MAC skip totals must dominate ET-only MAC skips");
+        expect(row.bit_steps_skipped_total >= row.bit_steps_skipped_et_only,
+               "aggregate row bit-step totals must dominate ET-only bit-step skips");
         expect(row.total_mismatches == 0U, "aggregate row reported output mismatches");
     }
 

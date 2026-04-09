@@ -24,6 +24,7 @@ struct MacOp {
     int kx{0};
     int input_y{0};
     int input_x{0};
+    int kernel_index{0};
 
     std::int8_t activation{0};
     std::int8_t weight{0};
@@ -33,6 +34,15 @@ struct MacOp {
 
     std::int32_t full_product{0};
     std::array<std::int32_t, 8> bit_contribution{};
+    std::uint8_t nonzero_bit_mask{0};
+    bool is_zero_activation{false};
+    bool is_zero_weight{false};
+    bool is_zero_product{false};
+    bool execution_zero_run_start{false};
+    std::size_t execution_zero_run_length{0};
+    bool kernel_zero_run_start{false};
+    std::size_t kernel_zero_run_length{0};
+    int kernel_zero_run_id{-1};
 
     int abs_weight{0};
     int leading_one{0};
@@ -64,9 +74,18 @@ public:
     bool earlyTerminated() const;
 
     std::size_t processedMacs() const;
+    std::size_t skippedMacsTotal() const;
+    std::size_t skippedMacsEtOnly() const;
+    std::size_t skippedMacsReactiveOnly() const;
+    std::size_t skippedMacsProactiveOnly() const;
+    std::size_t skippedMacsZeroOnly() const;
     std::size_t skippedMacs() const;
     std::size_t processedBitSteps() const;
+    std::size_t skippedBitStepsTotal() const;
+    std::size_t skippedBitStepsEtOnly() const;
+    std::size_t skippedBitStepsBitColumnOnly() const;
     std::size_t skippedBitSteps() const;
+    std::size_t zeroRunEvents() const;
     std::size_t totalMacs() const;
     std::size_t totalBitSteps() const;
 
@@ -94,7 +113,16 @@ public:
     void markBitProcessed(std::int32_t signed_contribution);
     void markParallelMacProcessed(std::int32_t signed_product);
     void advanceToNextOp();
-    void finalizeSkippedWorkOnEarlyTermination();
+    void skipCurrentOpZeroOnly();
+    void skipZeroRun(ZeroRunOrderMode mode);
+    void skipBitStepsInCurrentMac(std::size_t count);
+    void finalizeSkippedWorkOnEarlyTermination(ExecutionMode execution_mode,
+                                               bool current_mac_started,
+                                               std::size_t processed_bits_in_current_op);
+    bool currentOpCanRunProactiveZeroSkip(ZeroRunOrderMode mode) const;
+    std::size_t currentOpZeroRunLength(ZeroRunOrderMode mode) const;
+    int nextUsefulBitIndex(int serial_step_in_op, bool enable_msb_first) const;
+    bool currentOpIsZeroProduct() const;
 
     static constexpr std::size_t activationBytes() {
         return sizeof(std::int8_t);
@@ -112,6 +140,9 @@ private:
     static std::uint64_t packActivationKey(int cin, int y, int x);
     static std::uint64_t packWeightKey(int oc, int cin, int ky, int kx);
     static int leadingOnePosition(int value);
+    void updateZeroRunMetadata();
+    void skipCurrentOpZeroOnlyInternal(bool count_run_event);
+    void advanceToNextLiveOp();
     void decrementRemainingPositiveContributionUpperBound(std::int32_t signed_delta);
 
     int id_{-1};
@@ -120,6 +151,8 @@ private:
     int output_x_{0};
 
     std::vector<MacOp> worklist_;
+    std::vector<bool> removed_ops_;
+    std::vector<std::vector<std::size_t>> kernel_zero_run_sorted_indices_;
     std::size_t op_index_{0};
 
     std::int32_t accumulator_{0};
@@ -134,6 +167,13 @@ private:
 
     std::size_t processed_macs_{0};
     std::size_t processed_bit_steps_{0};
+    std::size_t skipped_macs_zero_only_{0};
+    std::size_t skipped_macs_et_only_{0};
+    std::size_t skipped_macs_reactive_only_{0};
+    std::size_t skipped_macs_proactive_only_{0};
+    std::size_t skipped_bit_steps_et_only_{0};
+    std::size_t skipped_bit_steps_bit_column_only_{0};
+    std::size_t zero_run_events_{0};
 
     // Exact ET state in accumulator units. With the after-processing invariant, this tracks
     // only future positive rescue work that could still make the pre-ReLU result positive.

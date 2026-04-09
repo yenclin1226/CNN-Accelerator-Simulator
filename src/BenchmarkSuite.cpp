@@ -51,6 +51,16 @@ std::string boolName(bool value) {
     return value ? "On" : "Off";
 }
 
+std::string zeroRunOrderModeName(ZeroRunOrderMode mode) {
+    switch (mode) {
+    case ZeroRunOrderMode::ExecutionOrder:
+        return "execution";
+    case ZeroRunOrderMode::KernelOrder:
+        return "kernel";
+    }
+    throw std::invalid_argument("Unhandled ZeroRunOrderMode.");
+}
+
 std::vector<GroupingPolicy> allGroupingPolicies() {
     return {
         GroupingPolicy::OutputChannelModulo,
@@ -167,13 +177,18 @@ BenchmarkScenario makeSyntheticScenario(BenchmarkSuiteTier tier,
 
 AcceleratorConfig makeExperimentConfig(const AcceleratorConfig& base,
                                        GroupingPolicy grouping_policy,
-                                       bool early_termination_enabled) {
+                                       bool early_termination_enabled,
+                                       const BenchmarkRunOptions& options) {
     AcceleratorConfig config = base;
     config.grouping_policy = grouping_policy;
     config.enable_early_termination = early_termination_enabled;
     config.pipeline_mode = early_termination_enabled
                                ? PipelineMode::FusedConvEarlyTerminationRelu
                                : PipelineMode::BaselineConvRelu;
+    config.enable_reactive_zero_skip = options.enable_reactive_zero_skip;
+    config.enable_proactive_zero_run_skip = options.enable_proactive_zero_run_skip;
+    config.zero_run_order_mode = options.zero_run_order_mode;
+    config.enable_bit_column_skip = options.enable_bit_column_skip;
     return config;
 }
 
@@ -205,12 +220,13 @@ PreparedScenario prepareScenario(const BenchmarkScenario& scenario) {
 }
 
 BenchmarkRecord runSingleRecord(const PreparedScenario& prepared,
+                                const BenchmarkRunOptions& options,
                                 GroupingPolicy grouping_policy,
                                 bool early_termination_enabled,
                                 std::size_t repetition_index) {
     ConvLayer working_layer = prepared.base_layer;
     const AcceleratorConfig config = makeExperimentConfig(
-        prepared.scenario.accelerator_config, grouping_policy, early_termination_enabled);
+        prepared.scenario.accelerator_config, grouping_policy, early_termination_enabled, options);
     Accelerator accelerator(config);
 
     const auto start = std::chrono::steady_clock::now();
@@ -357,12 +373,36 @@ BenchmarkAggregateRow aggregateGroup(const std::vector<const BenchmarkRecord*>& 
         roundedMeanMetric(records, [](const BenchmarkRecord& record) {
             return record.stats.output_elements_terminated_early;
         });
-    row.macs_skipped = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
-        return record.stats.macs_skipped;
+    row.macs_skipped_total = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.macs_skipped_total;
     });
-    row.bit_steps_skipped = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
-        return record.stats.bit_steps_skipped;
+    row.macs_skipped_et_only = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.macs_skipped_et_only;
     });
+    row.macs_skipped_reactive_only = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.macs_skipped_reactive_only;
+    });
+    row.macs_skipped_proactive_only = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.macs_skipped_proactive_only;
+    });
+    row.macs_skipped_zero_only = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.macs_skipped_zero_only;
+    });
+    row.bit_steps_skipped_total = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.bit_steps_skipped_total;
+    });
+    row.bit_steps_skipped_et_only = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.bit_steps_skipped_et_only;
+    });
+    row.bit_steps_skipped_bit_column_only =
+        roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+            return record.stats.bit_steps_skipped_bit_column_only;
+        });
+    row.zero_run_events = roundedMeanMetric(records, [](const BenchmarkRecord& record) {
+        return record.stats.zero_run_events;
+    });
+    row.macs_skipped = row.macs_skipped_total;
+    row.bit_steps_skipped = row.bit_steps_skipped_total;
 
     row.secondary.lane_workload_jain_fairness = meanOf(fairness_values);
     row.secondary.variance_group_completed_tasks = meanOf(completed_variances);
@@ -440,15 +480,24 @@ std::vector<BenchmarkComparisonRow> buildComparisonRows(
                                     : 0.0;
         row.tasks_terminated_early = on.tasks_terminated_early;
         row.output_elements_terminated_early = on.output_elements_terminated_early;
-        row.macs_skipped = on.macs_skipped;
-        row.bit_steps_skipped = on.bit_steps_skipped;
+        row.macs_skipped_total = on.macs_skipped_total;
+        row.macs_skipped_et_only = on.macs_skipped_et_only;
+        row.macs_skipped_reactive_only = on.macs_skipped_reactive_only;
+        row.macs_skipped_proactive_only = on.macs_skipped_proactive_only;
+        row.macs_skipped_zero_only = on.macs_skipped_zero_only;
+        row.bit_steps_skipped_total = on.bit_steps_skipped_total;
+        row.bit_steps_skipped_et_only = on.bit_steps_skipped_et_only;
+        row.bit_steps_skipped_bit_column_only = on.bit_steps_skipped_bit_column_only;
+        row.zero_run_events = on.zero_run_events;
+        row.macs_skipped = row.macs_skipped_total;
+        row.bit_steps_skipped = row.bit_steps_skipped_total;
         row.exact_match = off.exact_match && on.exact_match;
         row.cycle_reduction_observed = row.cycles_et_on < row.cycles_et_off;
         row.math_consistent =
             (off.tasks_terminated_early == 0U) &&
             (off.output_elements_terminated_early == 0U) &&
-            (off.macs_skipped == 0U) &&
-            (off.bit_steps_skipped == 0U) &&
+            (off.macs_skipped_et_only == 0U) &&
+            (off.bit_steps_skipped_et_only == 0U) &&
             (std::abs(row.cycle_delta - (row.cycles_et_off - row.cycles_et_on)) < 1e-9) &&
             (row.cycles_et_on <= 0.0 ||
              std::abs(row.cycle_speedup - (row.cycles_et_off / row.cycles_et_on)) < 1e-9);
@@ -686,6 +735,12 @@ void writeConfigurationSection(std::ostream& out, const BenchmarkSuiteResult& re
     }
     out << "\n";
     out << "et_mode=" << benchmarkEtModeName(result.options.et_mode) << "\n";
+    out << "reactive_zero_skip=" << boolName(result.options.enable_reactive_zero_skip) << "\n";
+    out << "proactive_zero_run_skip=" << boolName(result.options.enable_proactive_zero_run_skip)
+        << "\n";
+    out << "zero_run_order_mode=" << zeroRunOrderModeName(result.options.zero_run_order_mode)
+        << "\n";
+    out << "bit_column_skip=" << boolName(result.options.enable_bit_column_skip) << "\n";
     out << "warmup_iterations=" << result.options.warmup_iterations << "\n";
     out << "timed_repetitions=" << result.options.timed_repetitions << "\n";
     out << "grouping_policies=";
@@ -744,7 +799,11 @@ void writeDetailedSection(std::ostream& out, const BenchmarkSuiteResult& result)
            "onchip_buffer_bytes | activation_reuse_hits | activation_reuse_misses | "
            "weight_reuse_hits | weight_reuse_misses | memory_requests_avoided | "
            "work_stealing_events | tasks_terminated_early | output_elements_terminated_early | "
-           "macs_skipped | bit_steps_skipped | average_processed_fraction_per_task | mismatches\n";
+           "macs_skipped_total | macs_skipped_et_only | macs_skipped_reactive_only | "
+           "macs_skipped_proactive_only | macs_skipped_zero_only | "
+           "bit_steps_skipped_total | bit_steps_skipped_et_only | "
+           "bit_steps_skipped_bit_column_only | zero_run_events | "
+           "average_processed_fraction_per_task | mismatches\n";
     for (const BenchmarkAggregateRow& row : result.aggregate_rows) {
         out << scenarioDescriptor(row) << " | " << groupingPolicyName(row.grouping_policy)
             << " | " << boolName(row.early_termination_enabled)
@@ -766,8 +825,15 @@ void writeDetailedSection(std::ostream& out, const BenchmarkSuiteResult& result)
             << " | " << row.work_stealing_events
             << " | " << row.tasks_terminated_early
             << " | " << row.output_elements_terminated_early
-            << " | " << row.macs_skipped
-            << " | " << row.bit_steps_skipped
+            << " | " << row.macs_skipped_total
+            << " | " << row.macs_skipped_et_only
+            << " | " << row.macs_skipped_reactive_only
+            << " | " << row.macs_skipped_proactive_only
+            << " | " << row.macs_skipped_zero_only
+            << " | " << row.bit_steps_skipped_total
+            << " | " << row.bit_steps_skipped_et_only
+            << " | " << row.bit_steps_skipped_bit_column_only
+            << " | " << row.zero_run_events
             << " | " << formatDouble(row.average_processed_fraction_per_task, 6)
             << " | " << row.total_mismatches << "\n";
     }
@@ -798,7 +864,11 @@ void writeCompareSection(std::ostream& out, const BenchmarkSuiteResult& result) 
     writeSectionHeader(out, "Section 2: ET Comparisons");
     out << "scenario | grouping_policy | cycles_et_off | cycles_et_on | cycle_delta | "
            "cycle_speedup | wall_et_off_ms | wall_et_on_ms | wall_speedup | et_activity | "
-           "macs_skipped | bit_steps_skipped | math_consistent | cycle_reduction_observed\n";
+           "macs_skipped_total | macs_skipped_et_only | macs_skipped_reactive_only | "
+           "macs_skipped_proactive_only | macs_skipped_zero_only | "
+           "bit_steps_skipped_total | bit_steps_skipped_et_only | "
+           "bit_steps_skipped_bit_column_only | zero_run_events | math_consistent | "
+           "cycle_reduction_observed\n";
     for (const BenchmarkComparisonRow& row : result.comparison_rows) {
         out << scenarioDescriptor(row) << " | " << groupingPolicyName(row.grouping_policy)
             << " | " << formatDouble(row.cycles_et_off, 3)
@@ -809,8 +879,15 @@ void writeCompareSection(std::ostream& out, const BenchmarkSuiteResult& result) 
             << " | " << formatDouble(row.wall_time_et_on_ms, 6)
             << " | " << formatDouble(row.wall_time_speedup, 6)
             << " | " << row.tasks_terminated_early
-            << " | " << row.macs_skipped
-            << " | " << row.bit_steps_skipped
+            << " | " << row.macs_skipped_total
+            << " | " << row.macs_skipped_et_only
+            << " | " << row.macs_skipped_reactive_only
+            << " | " << row.macs_skipped_proactive_only
+            << " | " << row.macs_skipped_zero_only
+            << " | " << row.bit_steps_skipped_total
+            << " | " << row.bit_steps_skipped_et_only
+            << " | " << row.bit_steps_skipped_bit_column_only
+            << " | " << row.zero_run_events
             << " | " << (row.math_consistent ? "yes" : "no")
             << " | " << (row.cycle_reduction_observed ? "yes" : "no") << "\n";
     }
@@ -1014,14 +1091,14 @@ BenchmarkSecondaryMetrics deriveSecondaryMetrics(const SimulationStats& stats) {
     std::size_t terminated_tasks = 0;
     processed_fractions.reserve(stats.task_reports.size());
     for (const TaskReport& report : stats.task_reports) {
-        const std::uint64_t total_macs = report.processed_macs + report.skipped_macs;
+        const std::uint64_t total_macs = report.processed_macs + report.skipped_macs_total;
         const double fraction = total_macs == 0U
                                     ? 1.0
                                     : static_cast<double>(report.processed_macs) /
                                           static_cast<double>(total_macs);
         processed_fractions.push_back(fraction);
         if (report.early_terminated) {
-            skipped_macs_sum += report.skipped_macs;
+            skipped_macs_sum += report.skipped_macs_et_only;
             ++terminated_tasks;
         }
     }
@@ -1079,13 +1156,14 @@ BenchmarkSuiteResult runBenchmarkSuite(const BenchmarkRunOptions& options) {
             for (bool et_enabled : et_states) {
                 for (std::size_t warmup_index = 0; warmup_index < normalized.warmup_iterations;
                      ++warmup_index) {
-                    (void)runSingleRecord(prepared, grouping_policy, et_enabled, warmup_index);
+                    (void)runSingleRecord(
+                        prepared, normalized, grouping_policy, et_enabled, warmup_index);
                 }
                 for (std::size_t repetition_index = 0;
                      repetition_index < normalized.timed_repetitions;
                      ++repetition_index) {
-                    result.records.push_back(
-                        runSingleRecord(prepared, grouping_policy, et_enabled, repetition_index));
+                    result.records.push_back(runSingleRecord(
+                        prepared, normalized, grouping_policy, et_enabled, repetition_index));
                 }
             }
         }
@@ -1102,7 +1180,7 @@ BenchmarkSuiteResult runBenchmarkSuite(const BenchmarkRunOptions& options) {
     for (const BenchmarkAggregateRow& row : result.aggregate_rows) {
         if (!row.early_termination_enabled &&
             (row.tasks_terminated_early != 0U || row.output_elements_terminated_early != 0U ||
-             row.macs_skipped != 0U || row.bit_steps_skipped != 0U)) {
+             row.macs_skipped_et_only != 0U || row.bit_steps_skipped_et_only != 0U)) {
             result.primary_invariants_pass = false;
         }
     }
@@ -1146,7 +1224,10 @@ std::string renderBenchmarkCsvReport(const BenchmarkSuiteResult& result) {
                "broadcast_stall_ratio,dram_bytes,onchip_buffer_bytes,activation_reuse_hits,"
                "activation_reuse_misses,weight_reuse_hits,weight_reuse_misses,"
                "memory_requests_avoided,work_stealing_events,tasks_terminated_early,"
-               "output_elements_terminated_early,macs_skipped,bit_steps_skipped,"
+               "output_elements_terminated_early,macs_skipped_total,macs_skipped_et_only,"
+               "macs_skipped_reactive_only,macs_skipped_proactive_only,macs_skipped_zero_only,"
+               "bit_steps_skipped_total,bit_steps_skipped_et_only,"
+               "bit_steps_skipped_bit_column_only,zero_run_events,"
                "average_processed_fraction_per_task,total_mismatches,max_absolute_error,"
                "mean_absolute_error,mean_relative_error,jain_fairness,"
                "variance_group_completed_tasks,variance_group_active_lane_cycles,"
@@ -1167,8 +1248,12 @@ std::string renderBenchmarkCsvReport(const BenchmarkSuiteResult& result) {
                 << row.activation_reuse_misses << "," << row.weight_reuse_hits << ","
                 << row.weight_reuse_misses << "," << row.memory_requests_avoided << ","
                 << row.work_stealing_events << "," << row.tasks_terminated_early << ","
-                << row.output_elements_terminated_early << "," << row.macs_skipped << ","
-                << row.bit_steps_skipped << "," << row.average_processed_fraction_per_task << ","
+                << row.output_elements_terminated_early << "," << row.macs_skipped_total << ","
+                << row.macs_skipped_et_only << "," << row.macs_skipped_reactive_only << ","
+                << row.macs_skipped_proactive_only << "," << row.macs_skipped_zero_only << ","
+                << row.bit_steps_skipped_total << "," << row.bit_steps_skipped_et_only << ","
+                << row.bit_steps_skipped_bit_column_only << "," << row.zero_run_events << ","
+                << row.average_processed_fraction_per_task << ","
                 << row.total_mismatches << "," << row.max_absolute_error << ","
                 << row.mean_absolute_error << "," << row.mean_relative_error << ","
                 << row.secondary.lane_workload_jain_fairness << ","
@@ -1187,8 +1272,11 @@ std::string renderBenchmarkCsvReport(const BenchmarkSuiteResult& result) {
         out << "scenario_id,scenario_name,suite_tier,source,mnist_label,grouping_policy,"
                "cycles_et_off,cycles_et_on,cycle_delta,cycle_speedup,wall_time_et_off_ms,"
                "wall_time_et_on_ms,wall_time_speedup,tasks_terminated_early,"
-               "output_elements_terminated_early,macs_skipped,bit_steps_skipped,exact_match,"
-               "math_consistent,cycle_reduction_observed\n";
+               "output_elements_terminated_early,macs_skipped_total,macs_skipped_et_only,"
+               "macs_skipped_reactive_only,macs_skipped_proactive_only,macs_skipped_zero_only,"
+               "bit_steps_skipped_total,bit_steps_skipped_et_only,"
+               "bit_steps_skipped_bit_column_only,zero_run_events,exact_match,math_consistent,"
+               "cycle_reduction_observed\n";
         for (const BenchmarkComparisonRow& row : result.comparison_rows) {
             out << row.scenario_id << "," << row.scenario_name << ","
                 << benchmarkSuiteTierName(row.suite_tier) << "," << workloadSourceName(row.source)
@@ -1197,7 +1285,11 @@ std::string renderBenchmarkCsvReport(const BenchmarkSuiteResult& result) {
                 << row.cycle_speedup << "," << row.wall_time_et_off_ms << ","
                 << row.wall_time_et_on_ms << "," << row.wall_time_speedup << ","
                 << row.tasks_terminated_early << "," << row.output_elements_terminated_early << ","
-                << row.macs_skipped << "," << row.bit_steps_skipped << ","
+                << row.macs_skipped_total << "," << row.macs_skipped_et_only << ","
+                << row.macs_skipped_reactive_only << "," << row.macs_skipped_proactive_only << ","
+                << row.macs_skipped_zero_only << "," << row.bit_steps_skipped_total << ","
+                << row.bit_steps_skipped_et_only << ","
+                << row.bit_steps_skipped_bit_column_only << "," << row.zero_run_events << ","
                 << (row.exact_match ? "true" : "false") << ","
                 << (row.math_consistent ? "true" : "false") << ","
                 << (row.cycle_reduction_observed ? "true" : "false") << "\n";
@@ -1270,6 +1362,18 @@ bool tryParseGroupingPolicy(const std::string& value, GroupingPolicy& policy) {
             policy = candidate;
             return true;
         }
+    }
+    return false;
+}
+
+bool tryParseZeroRunOrderMode(const std::string& value, ZeroRunOrderMode& mode) {
+    if (value == "execution") {
+        mode = ZeroRunOrderMode::ExecutionOrder;
+        return true;
+    }
+    if (value == "kernel") {
+        mode = ZeroRunOrderMode::KernelOrder;
+        return true;
     }
     return false;
 }

@@ -30,6 +30,10 @@ struct LaneExecutionConfig {
     bool enable_importance_ordering{true};
     MacOrderingPolicy mac_ordering_policy{MacOrderingPolicy::EtAwareNegativeFirst};
     bool enable_early_termination{false};
+    bool enable_reactive_zero_skip{false};
+    bool enable_proactive_zero_run_skip{false};
+    ZeroRunOrderMode zero_run_order_mode{ZeroRunOrderMode::ExecutionOrder};
+    bool enable_bit_column_skip{false};
 };
 
 class Lane {
@@ -71,8 +75,17 @@ public:
     std::uint64_t macsExecuted() const;
     std::uint64_t earlyTerminatedTasks() const;
     std::uint64_t bitStepsExecuted() const;
+    std::uint64_t skippedMacsTotal() const;
+    std::uint64_t skippedMacsEtOnly() const;
+    std::uint64_t skippedMacsReactiveOnly() const;
+    std::uint64_t skippedMacsProactiveOnly() const;
+    std::uint64_t skippedMacsZeroOnly() const;
     std::uint64_t skippedMacs() const;
+    std::uint64_t skippedBitStepsTotal() const;
+    std::uint64_t skippedBitStepsEtOnly() const;
+    std::uint64_t skippedBitStepsBitColumnOnly() const;
     std::uint64_t skippedBitSteps() const;
+    std::uint64_t zeroRunEvents() const;
     std::uint64_t estimatedCyclesSavedByEarlyTermination() const;
     double averageProcessedFractionPerTask() const;
 
@@ -84,6 +97,9 @@ private:
                                            const LaneExecutionConfig& config);
     std::optional<Task> finalizeScheduleDrivenProgress(const LaneExecutionConfig& config);
     int currentBitIndex(const LaneExecutionConfig& config) const;
+    int demandedBitIndex(const LaneExecutionConfig& config) const;
+    bool skipCurrentZeroWorkIfPossible(const LaneExecutionConfig& config);
+    bool finishCurrentMacIfBitColumnExhausted(const LaneExecutionConfig& config);
     bool shouldEarlyTerminate(const Task& task, const LaneExecutionConfig& config) const;
     void resetEphemeralRegisters();
     std::optional<Task> finalizeCompletedTask();
@@ -117,8 +133,15 @@ private:
 
     std::uint64_t early_terminated_tasks_{0};
     std::uint64_t bit_steps_executed_{0};
-    std::uint64_t skipped_macs_{0};
-    std::uint64_t skipped_bit_steps_{0};
+    std::uint64_t skipped_macs_total_{0};
+    std::uint64_t skipped_macs_et_only_{0};
+    std::uint64_t skipped_macs_reactive_only_{0};
+    std::uint64_t skipped_macs_proactive_only_{0};
+    std::uint64_t skipped_macs_zero_only_{0};
+    std::uint64_t skipped_bit_steps_total_{0};
+    std::uint64_t skipped_bit_steps_et_only_{0};
+    std::uint64_t skipped_bit_steps_bit_column_only_{0};
+    std::uint64_t zero_run_events_{0};
     std::uint64_t estimated_cycles_saved_et_{0};
     double cumulative_processed_fraction_{0.0};
 };

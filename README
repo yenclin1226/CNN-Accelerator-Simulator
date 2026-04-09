@@ -40,6 +40,19 @@ Quick compare:
 ./build-bench/bitserial_bench --suite quick --mode compare
 ```
 
+Quick compare with all skip mechanisms enabled:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite quick \
+  --mode compare \
+  --et paired \
+  --reactive-zero-skip on \
+  --proactive-zero-run-skip on \
+  --zero-run-order execution \
+  --bit-column-skip on
+```
+
 Full compare suite:
 
 ```bash
@@ -113,6 +126,11 @@ Extended memory-pressure run:
 ./build-bench/bitserial_bench --scenario quick-mnist-sample-0
 ./build-bench/bitserial_bench --suite extended --synthetic-profile large
 ./build-bench/bitserial_bench --suite extended --synthetic-profile memory-pressure
+./build-bench/bitserial_bench --reactive-zero-skip on
+./build-bench/bitserial_bench --proactive-zero-run-skip on
+./build-bench/bitserial_bench --zero-run-order execution
+./build-bench/bitserial_bench --zero-run-order kernel
+./build-bench/bitserial_bench --bit-column-skip on
 ```
 
 Defaults:
@@ -121,8 +139,30 @@ Defaults:
 - `--mode compare`
 - `--grouping all`
 - `--et paired`
+- `--reactive-zero-skip off`
+- `--proactive-zero-run-skip off`
+- `--zero-run-order execution`
+- `--bit-column-skip off`
 - `--warmup 1`
 - `--repetitions 1`
+
+## Skip Metric Semantics
+
+- `macs_skipped_total`: MACs that never started for any reason.
+- `macs_skipped_et_only`: MACs skipped because ET ended the task before they started.
+- `macs_skipped_reactive_only`: isolated zero MACs skipped before any memory or broadcast work.
+- `macs_skipped_proactive_only`: zero MACs skipped as part of a proactive zero run.
+- `macs_skipped_zero_only`: `reactive_only + proactive_only`.
+- `bit_steps_skipped_total`: all skipped serial bit positions.
+- `bit_steps_skipped_et_only`: serial bit positions skipped because ET truncated remaining work.
+- `bit_steps_skipped_bit_column_only`: intra-MAC cursor jumps across empty weight bit positions.
+- `zero_run_events`: number of contiguous proactive skip decisions, not the number of MACs inside those runs.
+
+Correctness rules:
+
+- A skipped zero MAC never starts, so it does not request memory, demand a broadcast bit, or update the accumulator.
+- ET-only metrics stay zero in ET-off runs even when zero skipping or bit-column skipping are enabled.
+- Total skip metrics may be non-zero in ET-off runs once zero skipping or bit-column skipping is enabled.
 
 ## Tests
 

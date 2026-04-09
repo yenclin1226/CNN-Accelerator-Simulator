@@ -136,16 +136,52 @@ std::size_t Task::processedMacs() const {
     return processed_macs_;
 }
 
+std::size_t Task::skippedMacsTotal() const {
+    return skipped_macs_zero_only_ + skipped_macs_et_only_;
+}
+
+std::size_t Task::skippedMacsEtOnly() const {
+    return skipped_macs_et_only_;
+}
+
+std::size_t Task::skippedMacsReactiveOnly() const {
+    return skipped_macs_reactive_only_;
+}
+
+std::size_t Task::skippedMacsProactiveOnly() const {
+    return skipped_macs_proactive_only_;
+}
+
+std::size_t Task::skippedMacsZeroOnly() const {
+    return skipped_macs_zero_only_;
+}
+
 std::size_t Task::skippedMacs() const {
-    return totalMacs() - processed_macs_;
+    return skippedMacsTotal();
 }
 
 std::size_t Task::processedBitSteps() const {
     return processed_bit_steps_;
 }
 
+std::size_t Task::skippedBitStepsTotal() const {
+    return skipped_bit_steps_et_only_ + skipped_bit_steps_bit_column_only_;
+}
+
+std::size_t Task::skippedBitStepsEtOnly() const {
+    return skipped_bit_steps_et_only_;
+}
+
+std::size_t Task::skippedBitStepsBitColumnOnly() const {
+    return skipped_bit_steps_bit_column_only_;
+}
+
 std::size_t Task::skippedBitSteps() const {
-    return totalBitSteps() - processed_bit_steps_;
+    return skippedBitStepsTotal();
+}
+
+std::size_t Task::zeroRunEvents() const {
+    return zero_run_events_;
 }
 
 std::size_t Task::totalMacs() const {
@@ -312,6 +348,8 @@ void Task::initializeContext(const ConvLayer& layer,
                              MacOrderingPolicy mac_ordering_policy,
                              BroadcastMode broadcast_mode) {
     worklist_.clear();
+    removed_ops_.clear();
+    kernel_zero_run_sorted_indices_.clear();
     op_index_ = 0;
 
     accumulator_ = layer.hasBias() ? layer.readBias(output_channel_) : 0;
@@ -320,6 +358,13 @@ void Task::initializeContext(const ConvLayer& layer,
     early_terminated_ = false;
     processed_macs_ = 0;
     processed_bit_steps_ = 0;
+    skipped_macs_zero_only_ = 0;
+    skipped_macs_et_only_ = 0;
+    skipped_macs_reactive_only_ = 0;
+    skipped_macs_proactive_only_ = 0;
+    skipped_bit_steps_et_only_ = 0;
+    skipped_bit_steps_bit_column_only_ = 0;
+    zero_run_events_ = 0;
     remaining_positive_contribution_upper_bound_ = 0;
     status_ = TaskStatus::Issued;
 
@@ -331,6 +376,7 @@ void Task::initializeContext(const ConvLayer& layer,
         for (int ky = 0; ky < kernel_size; ++ky) {
             for (int kx = 0; kx < kernel_size; ++kx) {
                 MacOp op;
+                op.kernel_index = static_cast<int>(worklist_.size());
                 op.cin = cin;
                 op.ky = ky;
                 op.kx = kx;
@@ -345,6 +391,9 @@ void Task::initializeContext(const ConvLayer& layer,
                 op.abs_product = std::llabs(static_cast<long long>(op.full_product));
                 op.abs_weight = std::abs(static_cast<int>(op.weight));
                 op.leading_one = leadingOnePosition(op.abs_weight);
+                op.is_zero_activation = (op.activation == 0);
+                op.is_zero_weight = (op.weight == 0);
+                op.is_zero_product = (op.full_product == 0);
 
                 const int abs_activation = std::abs(static_cast<int>(op.activation));
                 const int abs_weight = std::abs(static_cast<int>(op.weight));
@@ -353,6 +402,8 @@ void Task::initializeContext(const ConvLayer& layer,
                     if (((abs_weight >> bit) & 0x1) != 0) {
                         op.bit_contribution[static_cast<std::size_t>(bit)] =
                             static_cast<std::int32_t>(sign * (abs_activation << bit));
+                        op.nonzero_bit_mask =
+                            static_cast<std::uint8_t>(op.nonzero_bit_mask | (1U << bit));
                     } else {
                         op.bit_contribution[static_cast<std::size_t>(bit)] = 0;
                     }
@@ -383,6 +434,10 @@ void Task::initializeContext(const ConvLayer& layer,
             std::stable_sort(worklist_.begin(), worklist_.end(), importanceOrderLess);
         }
     }
+
+    removed_ops_.assign(worklist_.size(), false);
+    updateZeroRunMetadata();
+    advanceToNextLiveOp();
 }
 
 const MacOp* Task::currentOp() const {
@@ -420,15 +475,212 @@ void Task::advanceToNextOp() {
     if (op_index_ < worklist_.size()) {
         ++op_index_;
     }
+    advanceToNextLiveOp();
 }
 
-void Task::finalizeSkippedWorkOnEarlyTermination() {
+void Task::skipCurrentOpZeroOnly() {
+    skipCurrentOpZeroOnlyInternal(false);
+}
+
+void Task::skipZeroRun(ZeroRunOrderMode mode) {
+    if (!hasMoreOps()) {
+        return;
+    }
+
+    const MacOp& op = worklist_[op_index_];
+    ++zero_run_events_;
+    if (mode == ZeroRunOrderMode::ExecutionOrder) {
+        const std::size_t run_length = op.execution_zero_run_length;
+        std::size_t skipped = 0;
+        for (std::size_t idx = op_index_; idx < worklist_.size() && skipped < run_length; ++idx) {
+            if (removed_ops_[idx]) {
+                continue;
+            }
+            removed_ops_[idx] = true;
+            ++skipped_macs_zero_only_;
+            ++skipped_macs_proactive_only_;
+            ++skipped;
+        }
+    } else {
+        const int run_id = op.kernel_zero_run_id;
+        if (run_id >= 0 &&
+            static_cast<std::size_t>(run_id) < kernel_zero_run_sorted_indices_.size()) {
+            for (const std::size_t idx : kernel_zero_run_sorted_indices_[static_cast<std::size_t>(run_id)]) {
+                if (removed_ops_[idx]) {
+                    continue;
+                }
+                removed_ops_[idx] = true;
+                ++skipped_macs_zero_only_;
+                ++skipped_macs_proactive_only_;
+            }
+        }
+    }
+    advanceToNextLiveOp();
+}
+
+void Task::skipBitStepsInCurrentMac(std::size_t count) {
+    skipped_bit_steps_bit_column_only_ += count;
+}
+
+void Task::finalizeSkippedWorkOnEarlyTermination(ExecutionMode execution_mode,
+                                                 bool current_mac_started,
+                                                 std::size_t processed_bits_in_current_op) {
     if (!early_terminated_) {
         return;
     }
 
+    std::size_t remaining_unstarted_macs = 0;
+    std::size_t scan_index = op_index_;
+    if (current_mac_started && scan_index < worklist_.size() && !removed_ops_[scan_index]) {
+        if (execution_mode == ExecutionMode::Int8BitSerial && processed_bits_in_current_op < 8U) {
+            skipped_bit_steps_et_only_ += 8U - processed_bits_in_current_op;
+        }
+        ++scan_index;
+    }
+
+    for (; scan_index < worklist_.size(); ++scan_index) {
+        if (!removed_ops_[scan_index]) {
+            ++remaining_unstarted_macs;
+        }
+    }
+
+    skipped_macs_et_only_ += remaining_unstarted_macs;
+    skipped_bit_steps_et_only_ += remaining_unstarted_macs * 8U;
     op_index_ = worklist_.size();
     remaining_positive_contribution_upper_bound_ = 0;
+}
+
+bool Task::currentOpCanRunProactiveZeroSkip(ZeroRunOrderMode mode) const {
+    if (!hasMoreOps()) {
+        return false;
+    }
+
+    const MacOp& op = worklist_[op_index_];
+    if (!op.is_zero_product) {
+        return false;
+    }
+
+    if (mode == ZeroRunOrderMode::ExecutionOrder) {
+        return op.execution_zero_run_start && op.execution_zero_run_length > 1U;
+    }
+    return op.kernel_zero_run_start && op.kernel_zero_run_length > 1U;
+}
+
+std::size_t Task::currentOpZeroRunLength(ZeroRunOrderMode mode) const {
+    if (!hasMoreOps()) {
+        return 0U;
+    }
+
+    const MacOp& op = worklist_[op_index_];
+    return (mode == ZeroRunOrderMode::ExecutionOrder)
+               ? op.execution_zero_run_length
+               : op.kernel_zero_run_length;
+}
+
+int Task::nextUsefulBitIndex(int serial_step_in_op, bool enable_msb_first) const {
+    if (!hasMoreOps()) {
+        return -1;
+    }
+
+    const std::uint8_t bit_mask = worklist_[op_index_].nonzero_bit_mask;
+    for (int cursor = std::max(0, serial_step_in_op); cursor < 8; ++cursor) {
+        const int bit_index = enable_msb_first ? (7 - cursor) : cursor;
+        if ((bit_mask & static_cast<std::uint8_t>(1U << bit_index)) != 0U) {
+            return bit_index;
+        }
+    }
+    return -1;
+}
+
+bool Task::currentOpIsZeroProduct() const {
+    return hasMoreOps() && worklist_[op_index_].is_zero_product;
+}
+
+void Task::updateZeroRunMetadata() {
+    for (MacOp& op : worklist_) {
+        op.execution_zero_run_start = false;
+        op.execution_zero_run_length = 0;
+        op.kernel_zero_run_start = false;
+        op.kernel_zero_run_length = 0;
+        op.kernel_zero_run_id = -1;
+    }
+
+    std::size_t index = 0;
+    while (index < worklist_.size()) {
+        if (!worklist_[index].is_zero_product) {
+            ++index;
+            continue;
+        }
+
+        std::size_t end = index;
+        while (end < worklist_.size() && worklist_[end].is_zero_product) {
+            ++end;
+        }
+        worklist_[index].execution_zero_run_start = true;
+        worklist_[index].execution_zero_run_length = end - index;
+        index = end;
+    }
+
+    std::vector<std::size_t> kernel_sorted_indices(worklist_.size());
+    for (std::size_t i = 0; i < worklist_.size(); ++i) {
+        kernel_sorted_indices[i] = i;
+    }
+    std::stable_sort(kernel_sorted_indices.begin(),
+                     kernel_sorted_indices.end(),
+                     [&](std::size_t lhs, std::size_t rhs) {
+                         return worklist_[lhs].kernel_index < worklist_[rhs].kernel_index;
+                     });
+
+    index = 0;
+    int run_id = 0;
+    while (index < kernel_sorted_indices.size()) {
+        const std::size_t sorted_index = kernel_sorted_indices[index];
+        if (!worklist_[sorted_index].is_zero_product) {
+            ++index;
+            continue;
+        }
+
+        std::size_t end = index;
+        while (end < kernel_sorted_indices.size() &&
+               worklist_[kernel_sorted_indices[end]].is_zero_product) {
+            ++end;
+        }
+
+        std::vector<std::size_t> run_members;
+        run_members.reserve(end - index);
+        for (std::size_t i = index; i < end; ++i) {
+            const std::size_t member_index = kernel_sorted_indices[i];
+            worklist_[member_index].kernel_zero_run_id = run_id;
+            run_members.push_back(member_index);
+        }
+
+        const std::size_t start_index = kernel_sorted_indices[index];
+        worklist_[start_index].kernel_zero_run_start = true;
+        worklist_[start_index].kernel_zero_run_length = end - index;
+        kernel_zero_run_sorted_indices_.push_back(std::move(run_members));
+        ++run_id;
+        index = end;
+    }
+}
+
+void Task::skipCurrentOpZeroOnlyInternal(bool count_run_event) {
+    if (!hasMoreOps()) {
+        return;
+    }
+
+    if (count_run_event) {
+        ++zero_run_events_;
+    }
+    removed_ops_[op_index_] = true;
+    ++skipped_macs_zero_only_;
+    ++skipped_macs_reactive_only_;
+    advanceToNextLiveOp();
+}
+
+void Task::advanceToNextLiveOp() {
+    while (op_index_ < worklist_.size() && removed_ops_[op_index_]) {
+        ++op_index_;
+    }
 }
 
 void Task::decrementRemainingPositiveContributionUpperBound(std::int32_t signed_delta) {

@@ -1,0 +1,10 @@
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/bitserial_sim_core.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/bitserial_sim.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/bitserial_bench.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/benchmark_helper_tests.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/benchmark_regression_tests.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/benchmark_realworld_tests.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/zero_skip_tests.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/test.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/edit_cache.dir
+/home/kylewang02/eecs573-comp/573-og/build/CMakeFiles/rebuild_cache.dir

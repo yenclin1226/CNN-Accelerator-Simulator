@@ -19,3 +19,8 @@ enum class MacOrderingPolicy {
     Importance,
     EtAwareNegativeFirst
 };
+
+enum class ZeroRunOrderMode {
+    ExecutionOrder,
+    KernelOrder
+};

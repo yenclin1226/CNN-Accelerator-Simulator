@@ -62,6 +62,10 @@ struct BenchmarkRunOptions {
     std::string csv_output_path;
     std::vector<std::string> selected_scenario_ids;
     std::vector<std::string> synthetic_profile_filters;
+    bool enable_reactive_zero_skip{false};
+    bool enable_proactive_zero_run_skip{false};
+    ZeroRunOrderMode zero_run_order_mode{ZeroRunOrderMode::ExecutionOrder};
+    bool enable_bit_column_skip{false};
 };
 
 struct BenchmarkRecord {
@@ -126,7 +130,16 @@ struct BenchmarkAggregateRow {
     std::uint64_t tasks_terminated_early{0};
     std::uint64_t output_elements_terminated_early{0};
     std::uint64_t macs_skipped{0};
+    std::uint64_t macs_skipped_total{0};
+    std::uint64_t macs_skipped_et_only{0};
+    std::uint64_t macs_skipped_reactive_only{0};
+    std::uint64_t macs_skipped_proactive_only{0};
+    std::uint64_t macs_skipped_zero_only{0};
     std::uint64_t bit_steps_skipped{0};
+    std::uint64_t bit_steps_skipped_total{0};
+    std::uint64_t bit_steps_skipped_et_only{0};
+    std::uint64_t bit_steps_skipped_bit_column_only{0};
+    std::uint64_t zero_run_events{0};
     double average_processed_fraction_per_task{1.0};
     std::size_t total_mismatches{0};
     std::int32_t max_absolute_error{0};
@@ -152,7 +165,16 @@ struct BenchmarkComparisonRow {
     std::uint64_t tasks_terminated_early{0};
     std::uint64_t output_elements_terminated_early{0};
     std::uint64_t macs_skipped{0};
+    std::uint64_t macs_skipped_total{0};
+    std::uint64_t macs_skipped_et_only{0};
+    std::uint64_t macs_skipped_reactive_only{0};
+    std::uint64_t macs_skipped_proactive_only{0};
+    std::uint64_t macs_skipped_zero_only{0};
     std::uint64_t bit_steps_skipped{0};
+    std::uint64_t bit_steps_skipped_total{0};
+    std::uint64_t bit_steps_skipped_et_only{0};
+    std::uint64_t bit_steps_skipped_bit_column_only{0};
+    std::uint64_t zero_run_events{0};
     bool exact_match{true};
     bool math_consistent{true};
     bool cycle_reduction_observed{false};
@@ -191,6 +213,7 @@ bool tryParseBenchmarkSuiteTier(const std::string& value, BenchmarkSuiteTier& ti
 bool tryParseBenchmarkRunMode(const std::string& value, BenchmarkRunMode& mode);
 bool tryParseBenchmarkEtMode(const std::string& value, BenchmarkEtMode& mode);
 bool tryParseGroupingPolicy(const std::string& value, GroupingPolicy& policy);
+bool tryParseZeroRunOrderMode(const std::string& value, ZeroRunOrderMode& mode);
 
 void writeBenchmarkOutputs(const BenchmarkSuiteResult& result,
                            std::ostream& text_out,

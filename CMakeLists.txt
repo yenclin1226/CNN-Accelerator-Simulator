@@ -56,12 +56,19 @@ add_executable(benchmark_realworld_tests
 )
 target_link_libraries(benchmark_realworld_tests PRIVATE bitserial_sim_core)
 
+add_executable(zero_skip_tests
+    tests/zero_skip_tests.cpp
+)
+target_link_libraries(zero_skip_tests PRIVATE bitserial_sim_core)
+
 add_test(NAME benchmark_helper_tests COMMAND benchmark_helper_tests)
 add_test(NAME benchmark_regression_tests COMMAND benchmark_regression_tests)
 add_test(NAME benchmark_realworld_tests COMMAND benchmark_realworld_tests)
+add_test(NAME zero_skip_tests COMMAND zero_skip_tests)
 set_tests_properties(
     benchmark_helper_tests
     benchmark_regression_tests
     benchmark_realworld_tests
+    zero_skip_tests
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

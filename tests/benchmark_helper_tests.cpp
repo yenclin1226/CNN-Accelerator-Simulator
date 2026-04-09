@@ -40,9 +40,9 @@ int main() {
         stats.variance_group_active_lane_cycles = 34.0;
         stats.estimated_cycles_saved_early_termination = 56;
         stats.task_reports = {
-            TaskReport{0, 0, 0, 0, false, 0, 0, 10, 0, 80, 0},
-            TaskReport{1, 0, 0, 1, true, 0, 0, 4, 6, 32, 48},
-            TaskReport{2, 0, 0, 2, true, 0, 0, 2, 8, 16, 64},
+            TaskReport{0, 0, 0, 0, false, 0, 0, 10, 0, 0, 0, 0, 80, 0, 0, 0, 0},
+            TaskReport{1, 0, 0, 1, true, 0, 0, 4, 6, 6, 0, 0, 32, 48, 48, 0, 0},
+            TaskReport{2, 0, 0, 2, true, 0, 0, 2, 8, 8, 0, 0, 16, 64, 64, 0, 0},
         };
 
         const BenchmarkSecondaryMetrics secondary = deriveSecondaryMetrics(stats);

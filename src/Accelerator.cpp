@@ -27,6 +27,10 @@ LaneExecutionConfig composeLaneConfig(const AcceleratorConfig& config) {
     lane_config.enable_importance_ordering = config.enable_importance_ordering;
     lane_config.mac_ordering_policy = config.mac_ordering_policy;
     lane_config.enable_early_termination = config.enable_early_termination;
+    lane_config.enable_reactive_zero_skip = config.enable_reactive_zero_skip;
+    lane_config.enable_proactive_zero_run_skip = config.enable_proactive_zero_run_skip;
+    lane_config.zero_run_order_mode = config.zero_run_order_mode;
+    lane_config.enable_bit_column_skip = config.enable_bit_column_skip;
     return lane_config;
 }
 
@@ -225,9 +229,22 @@ SimulationStats Accelerator::run(ConvLayer& layer) {
                 report.pre_relu_output = done->preReluOutput();
                 report.post_relu_output = done->finalOutput();
                 report.processed_macs = static_cast<std::uint64_t>(done->processedMacs());
-                report.skipped_macs = static_cast<std::uint64_t>(done->skippedMacs());
+                report.skipped_macs_total = static_cast<std::uint64_t>(done->skippedMacsTotal());
+                report.skipped_macs_et_only = static_cast<std::uint64_t>(done->skippedMacsEtOnly());
+                report.skipped_macs_reactive_only =
+                    static_cast<std::uint64_t>(done->skippedMacsReactiveOnly());
+                report.skipped_macs_proactive_only =
+                    static_cast<std::uint64_t>(done->skippedMacsProactiveOnly());
+                report.skipped_macs_zero_only =
+                    static_cast<std::uint64_t>(done->skippedMacsZeroOnly());
                 report.processed_bit_steps = static_cast<std::uint64_t>(done->processedBitSteps());
-                report.skipped_bit_steps = static_cast<std::uint64_t>(done->skippedBitSteps());
+                report.skipped_bit_steps_total =
+                    static_cast<std::uint64_t>(done->skippedBitStepsTotal());
+                report.skipped_bit_steps_et_only =
+                    static_cast<std::uint64_t>(done->skippedBitStepsEtOnly());
+                report.skipped_bit_steps_bit_column_only =
+                    static_cast<std::uint64_t>(done->skippedBitStepsBitColumnOnly());
+                report.zero_run_events = static_cast<std::uint64_t>(done->zeroRunEvents());
                 task_reports.push_back(report);
             }
         }
@@ -290,8 +307,15 @@ SimulationStats Accelerator::run(ConvLayer& layer) {
             stats.task_issue_events += lane.taskIssueEvents();
             stats.total_macs += lane.macsExecuted();
             stats.tasks_terminated_early += lane.earlyTerminatedTasks();
-            stats.macs_skipped += lane.skippedMacs();
-            stats.bit_steps_skipped += lane.skippedBitSteps();
+            stats.macs_skipped_total += lane.skippedMacsTotal();
+            stats.macs_skipped_et_only += lane.skippedMacsEtOnly();
+            stats.macs_skipped_reactive_only += lane.skippedMacsReactiveOnly();
+            stats.macs_skipped_proactive_only += lane.skippedMacsProactiveOnly();
+            stats.macs_skipped_zero_only += lane.skippedMacsZeroOnly();
+            stats.bit_steps_skipped_total += lane.skippedBitStepsTotal();
+            stats.bit_steps_skipped_et_only += lane.skippedBitStepsEtOnly();
+            stats.bit_steps_skipped_bit_column_only += lane.skippedBitStepsBitColumnOnly();
+            stats.zero_run_events += lane.zeroRunEvents();
             stats.estimated_cycles_saved_early_termination +=
                 lane.estimatedCyclesSavedByEarlyTermination();
             group_active_cycles += lane.activeCycles();
@@ -327,6 +351,8 @@ SimulationStats Accelerator::run(ConvLayer& layer) {
         stats.finished_lane_idle_ratio = static_cast<double>(stats.idle_finished_cycles) / denom;
         stats.idle_ratio = static_cast<double>(stats.idle_lane_cycles) / denom;
     }
+    stats.macs_skipped = stats.macs_skipped_total;
+    stats.bit_steps_skipped = stats.bit_steps_skipped_total;
 
     stats.dram_accesses = memory_.dramAccesses();
     stats.onchip_buffer_accesses = memory_.onChipBufferAccesses();
@@ -383,7 +409,7 @@ SimulationStats Accelerator::run(ConvLayer& layer) {
         if (report.early_terminated) {
             ++terminated_outputs;
         }
-        const std::uint64_t total_ops = report.processed_macs + report.skipped_macs;
+        const std::uint64_t total_ops = report.processed_macs + report.skipped_macs_total;
         if (total_ops == 0) {
             processed_fraction_sum += 1.0;
         } else {

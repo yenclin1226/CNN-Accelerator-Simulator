@@ -1,0 +1,63 @@
+Start testing: Apr 09 03:56 EDT
+----------------------------------------------------------
+1/4 Testing: benchmark_helper_tests
+1/4 Test: benchmark_helper_tests
+Command: "/home/kylewang02/eecs573-comp/573-og/build/benchmark_helper_tests"
+Directory: /home/kylewang02/eecs573-comp/573-og
+"benchmark_helper_tests" start time: Apr 09 03:56 EDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_helper_tests" end time: Apr 09 03:56 EDT
+"benchmark_helper_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/4 Testing: benchmark_regression_tests
+2/4 Test: benchmark_regression_tests
+Command: "/home/kylewang02/eecs573-comp/573-og/build/benchmark_regression_tests"
+Directory: /home/kylewang02/eecs573-comp/573-og
+"benchmark_regression_tests" start time: Apr 09 03:56 EDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =  30.89 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_regression_tests" end time: Apr 09 03:56 EDT
+"benchmark_regression_tests" time elapsed: 00:00:30
+----------------------------------------------------------
+
+3/4 Testing: benchmark_realworld_tests
+3/4 Test: benchmark_realworld_tests
+Command: "/home/kylewang02/eecs573-comp/573-og/build/benchmark_realworld_tests"
+Directory: /home/kylewang02/eecs573-comp/573-og
+"benchmark_realworld_tests" start time: Apr 09 03:56 EDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time = 110.07 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_realworld_tests" end time: Apr 09 03:58 EDT
+"benchmark_realworld_tests" time elapsed: 00:01:50
+----------------------------------------------------------
+
+4/4 Testing: zero_skip_tests
+4/4 Test: zero_skip_tests
+Command: "/home/kylewang02/eecs573-comp/573-og/build/zero_skip_tests"
+Directory: /home/kylewang02/eecs573-comp/573-og
+"zero_skip_tests" start time: Apr 09 03:58 EDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"zero_skip_tests" end time: Apr 09 03:58 EDT
+"zero_skip_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Apr 09 03:58 EDT

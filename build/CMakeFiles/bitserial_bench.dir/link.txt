@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/bitserial_bench.dir/src/benchmark_main.cpp.o -o bitserial_bench  libbitserial_sim_core.a 

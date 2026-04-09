@@ -34,6 +34,10 @@ struct AcceleratorConfig {
     bool enable_importance_ordering{true};
     MacOrderingPolicy mac_ordering_policy{MacOrderingPolicy::EtAwareNegativeFirst};
     bool enable_early_termination{false};
+    bool enable_reactive_zero_skip{false};
+    bool enable_proactive_zero_run_skip{false};
+    ZeroRunOrderMode zero_run_order_mode{ZeroRunOrderMode::ExecutionOrder};
+    bool enable_bit_column_skip{false};
     std::uint64_t max_cycles{50'000'000};
     MemoryConfig memory;
 };
@@ -47,9 +51,16 @@ struct TaskReport {
     std::int32_t pre_relu_output{0};
     std::int32_t post_relu_output{0};
     std::uint64_t processed_macs{0};
-    std::uint64_t skipped_macs{0};
+    std::uint64_t skipped_macs_total{0};
+    std::uint64_t skipped_macs_et_only{0};
+    std::uint64_t skipped_macs_reactive_only{0};
+    std::uint64_t skipped_macs_proactive_only{0};
+    std::uint64_t skipped_macs_zero_only{0};
     std::uint64_t processed_bit_steps{0};
-    std::uint64_t skipped_bit_steps{0};
+    std::uint64_t skipped_bit_steps_total{0};
+    std::uint64_t skipped_bit_steps_et_only{0};
+    std::uint64_t skipped_bit_steps_bit_column_only{0};
+    std::uint64_t zero_run_events{0};
 };
 
 struct SimulationStats {
@@ -100,7 +111,16 @@ struct SimulationStats {
     std::uint64_t tasks_terminated_early{0};
     std::uint64_t output_elements_terminated_early{0};
     std::uint64_t macs_skipped{0};
+    std::uint64_t macs_skipped_total{0};
+    std::uint64_t macs_skipped_et_only{0};
+    std::uint64_t macs_skipped_reactive_only{0};
+    std::uint64_t macs_skipped_proactive_only{0};
+    std::uint64_t macs_skipped_zero_only{0};
     std::uint64_t bit_steps_skipped{0};
+    std::uint64_t bit_steps_skipped_total{0};
+    std::uint64_t bit_steps_skipped_et_only{0};
+    std::uint64_t bit_steps_skipped_bit_column_only{0};
+    std::uint64_t zero_run_events{0};
     std::uint64_t estimated_cycles_saved_early_termination{0};
     double average_processed_fraction_per_task{1.0};
     std::vector<double> average_queued_predicted_cost_per_group;

@@ -26,6 +26,10 @@ std::string benchmarkHelpText() {
         "  --bias-path PATH                    Override quantized bias file for MNIST-backed scenarios.\n"
         "  --grouping all|POLICY               Grouping policy filter. Repeatable. Default: all.\n"
         "  --et paired|off|on                  Early termination selection. Default: paired.\n"
+        "  --reactive-zero-skip on|off         Enable reactive zero-MAC skipping. Default: off.\n"
+        "  --proactive-zero-run-skip on|off    Enable proactive zero-run skipping. Default: off.\n"
+        "  --zero-run-order execution|kernel   Proactive run definition. Default: execution.\n"
+        "  --bit-column-skip on|off            Enable bit-column skip. Default: off.\n"
         "  --scenario ID                       Optional scenario id filter. Repeatable.\n"
         "  --synthetic-profile NAME            Synthetic-only filter: default|large|memory-pressure|all.\n"
         "  --help                              Show this message.\n"
@@ -46,6 +50,16 @@ std::string requireValue(int& index, int argc, char** argv, const std::string& f
     }
     ++index;
     return argv[index];
+}
+
+bool parseOnOff(const std::string& value, const std::string& flag) {
+    if (value == "on") {
+        return true;
+    }
+    if (value == "off") {
+        return false;
+    }
+    throw std::invalid_argument("Invalid value for " + flag + ": " + value);
 }
 
 BenchmarkRunOptions parseBenchmarkRunOptions(int argc, char** argv) {
@@ -141,6 +155,32 @@ BenchmarkRunOptions parseBenchmarkRunOptions(int argc, char** argv) {
             if (!tryParseBenchmarkEtMode(value, options.et_mode)) {
                 throw std::invalid_argument("Invalid ET mode: " + value);
             }
+            continue;
+        }
+
+        if (argument == "--reactive-zero-skip") {
+            options.enable_reactive_zero_skip =
+                parseOnOff(requireValue(index, argc, argv, argument), argument);
+            continue;
+        }
+
+        if (argument == "--proactive-zero-run-skip") {
+            options.enable_proactive_zero_run_skip =
+                parseOnOff(requireValue(index, argc, argv, argument), argument);
+            continue;
+        }
+
+        if (argument == "--zero-run-order") {
+            const std::string value = requireValue(index, argc, argv, argument);
+            if (!tryParseZeroRunOrderMode(value, options.zero_run_order_mode)) {
+                throw std::invalid_argument("Invalid zero-run order mode: " + value);
+            }
+            continue;
+        }
+
+        if (argument == "--bit-column-skip") {
+            options.enable_bit_column_skip =
+                parseOnOff(requireValue(index, argc, argv, argument), argument);
             continue;
         }
 
