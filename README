@@ -1,30 +1,154 @@
 # CNN Accelerator Simulator
-This project simulates a C++ CNN accelerator.
 
-## Build And Run
-Please unzip the .zip file first.
+## Build
 
-1. Model Training
+```bash
+cmake -S . -B build-bench
+cmake --build build-bench -j
+```
+
+## Run
+
+Legacy single run:
+
+```bash
+./build-bench/bitserial_sim
+```
+
+Outputs:
+
+- `experiment_report.txt`
+- `experiment_report.csv`
+
+Benchmark help:
+
+```bash
+./build-bench/bitserial_bench --help
+```
+
+## Benchmark Modes
+
+- `speed`: timing summary
+- `detailed`: full metrics
+- `compare`: ET-off vs ET-on summary
+
+## Common Commands
+
+Quick compare:
+
+```bash
+./build-bench/bitserial_bench --suite quick --mode compare
+```
+
+Full compare suite:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite all \
+  --mode compare \
+  --et paired \
+  --grouping all \
+  --warmup 1 \
+  --repetitions 1 \
+  --text-out build-bench/full_benchmark_compare.txt \
+  --csv-out build-bench/full_benchmark_compare.csv
+```
+
+Full detailed suite:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite all \
+  --mode detailed \
+  --et paired \
+  --grouping all \
+  --warmup 1 \
+  --repetitions 1 \
+  --text-out build-bench/full_benchmark_detailed.txt \
+  --csv-out build-bench/full_benchmark_detailed.csv
+```
+
+Focused sample 0 compare:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite quick \
+  --mode compare \
+  --scenario quick-mnist-sample-0 \
+  --text-out build-bench/sample0_compare.txt \
+  --csv-out build-bench/sample0_compare.csv
+```
+
+Repeated speed run:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite quick \
+  --mode speed \
+  --warmup 1 \
+  --repetitions 5 \
+  --text-out build-bench/quick_speed.txt
+```
+
+Extended memory-pressure run:
+
+```bash
+./build-bench/bitserial_bench \
+  --suite extended \
+  --mode detailed \
+  --synthetic-profile memory-pressure \
+  --grouping ETAwareCostBalancedMemoryAware \
+  --et on \
+  --csv-out build-bench/memory_pressure_detailed.csv
+```
+
+## Useful Flags
+
+```bash
+./build-bench/bitserial_bench --grouping OutputChannelModulo
+./build-bench/bitserial_bench --grouping ETAwareCostBalancedMemoryAware
+./build-bench/bitserial_bench --et paired
+./build-bench/bitserial_bench --et off
+./build-bench/bitserial_bench --et on
+./build-bench/bitserial_bench --scenario quick-mnist-sample-0
+./build-bench/bitserial_bench --suite extended --synthetic-profile large
+./build-bench/bitserial_bench --suite extended --synthetic-profile memory-pressure
+```
+
+Defaults:
+
+- `--suite quick`
+- `--mode compare`
+- `--grouping all`
+- `--et paired`
+- `--warmup 1`
+- `--repetitions 1`
+
+## Tests
+
+Run all tests:
+
+```bash
+cd build-bench
+ctest --output-on-failure
+```
+
+Individual tests:
+
+```bash
+./build-bench/benchmark_helper_tests
+./build-bench/benchmark_regression_tests
+./build-bench/benchmark_realworld_tests
+```
+
+Test coverage:
+
+- `benchmark_helper_tests`: helper math and report formatting
+- `benchmark_regression_tests`: sample-0 benchmark invariants
+- `benchmark_realworld_tests`: sparse/dense MNIST, speed mode, memory-pressure runs
+
+## Training
+
 ```bash
 python3 training/train_mnist_cnn.py
-```
-After training, the bias and weights are written to `conv1_bias.txt` and `conv1_weights.txt`.
-
-2. Accelerator Simulation
-```bash
-g++ -std=c++17 -Iinclude src/*.cpp -o bitserial_sim.exe
-./bitserial_sim.exe
-```
-After the run finishes, the results are written to `experiment_report.txt`.
-
-## Main Run Switches
-1. The main experiment settings are in [src/main.cpp].
-
-2. The most important switches are:
-```cpp
-[614] const bool use_dataset_mode = true;  // true: using real mnist sample; false: using randomize data
-[615] const int dataset_sample_index = 0; // load the nth image to do testing
-[616] const std::string dataset_input_path = "mnist_test.csv";
-[617] const std::string dataset_weight_path = "training/conv1_weight.txt";
-[618] const std::string dataset_bias_path = "training/conv1_bias.txt";
 ```

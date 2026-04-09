@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/bitserial_sim.dir/src/main.cpp.o -o bitserial_sim  libbitserial_sim_core.a 

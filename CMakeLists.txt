@@ -6,11 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(bitserial_sim
+set(BITSERIAL_COMMON_SOURCES
     src/Accelerator.cpp
+    src/BenchmarkSuite.cpp
     src/ConvLayer.cpp
     src/Lane.cpp
-    src/main.cpp
     src/Memory.cpp
     src/MNISTReader.cpp
     src/PEGroup.cpp
@@ -21,4 +21,47 @@ add_executable(bitserial_sim
     src/WorkQueue.cpp
 )
 
-target_include_directories(bitserial_sim PRIVATE include)
+add_library(bitserial_sim_core STATIC
+    ${BITSERIAL_COMMON_SOURCES}
+)
+
+target_include_directories(bitserial_sim_core PUBLIC include)
+
+add_executable(bitserial_sim
+    src/main.cpp
+)
+
+target_link_libraries(bitserial_sim PRIVATE bitserial_sim_core)
+
+add_executable(bitserial_bench
+    src/benchmark_main.cpp
+)
+
+target_link_libraries(bitserial_bench PRIVATE bitserial_sim_core)
+
+enable_testing()
+
+add_executable(benchmark_helper_tests
+    tests/benchmark_helper_tests.cpp
+)
+target_link_libraries(benchmark_helper_tests PRIVATE bitserial_sim_core)
+
+add_executable(benchmark_regression_tests
+    tests/benchmark_regression_tests.cpp
+)
+target_link_libraries(benchmark_regression_tests PRIVATE bitserial_sim_core)
+
+add_executable(benchmark_realworld_tests
+    tests/benchmark_realworld_tests.cpp
+)
+target_link_libraries(benchmark_realworld_tests PRIVATE bitserial_sim_core)
+
+add_test(NAME benchmark_helper_tests COMMAND benchmark_helper_tests)
+add_test(NAME benchmark_regression_tests COMMAND benchmark_regression_tests)
+add_test(NAME benchmark_realworld_tests COMMAND benchmark_realworld_tests)
+set_tests_properties(
+    benchmark_helper_tests
+    benchmark_regression_tests
+    benchmark_realworld_tests
+    PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

@@ -1,0 +1,38 @@
+Section 1: Benchmark Configuration
+==================================
+mode=compare
+suite_tiers=quick
+et_mode=paired
+warmup_iterations=1
+timed_repetitions=1
+grouping_policies=OutputChannelModulo,TaskRoundRobin,ETAwareCostBalanced,ETAwareCostBalancedMemoryAware,BroadcastPhaseAwareFanoutBalanced
+scenario_count=1
+exactness_pass=PASS
+primary_invariants_pass=PASS
+
+Section 2: ET Comparisons
+=========================
+scenario | grouping_policy | cycles_et_off | cycles_et_on | cycle_delta | cycle_speedup | wall_et_off_ms | wall_et_on_ms | wall_speedup | et_activity | macs_skipped | bit_steps_skipped | math_consistent | cycle_reduction_observed
+quick-mnist-sample-0 (label=7) | OutputChannelModulo | 76786.000 | 33341.000 | 43445.000 | 2.303050 | 2217.753722 | 930.833757 | 2.382545 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | 78102.000 | 33729.000 | 44373.000 | 2.315574 | 2528.344961 | 1267.227928 | 1.995178 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | 81392.000 | 34557.000 | 46835.000 | 2.355297 | 5482.100389 | 3275.740558 | 1.673545 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalanced | 79625.000 | 34620.000 | 45005.000 | 2.299971 | 3191.898487 | 2274.586253 | 1.403288 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | TaskRoundRobin | 83162.000 | 35420.000 | 47742.000 | 2.347883 | 2270.917418 | 1011.482295 | 2.245138 | 4204 | 33370 | 295346 | yes | yes
+
+Section 3: Policy Rankings
+==========================
+quick-mnist-sample-0
+  1. OutputChannelModulo cycles_et_on=33341.000 speedup=2.303050
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=33729.000 speedup=2.315574
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=34557.000 speedup=2.355297
+  4. ETAwareCostBalanced cycles_et_on=34620.000 speedup=2.299971
+  5. TaskRoundRobin cycles_et_on=35420.000 speedup=2.347883
+
+Section 4: Soft Benchmark Expectations
+======================================
+quick-mnist-sample-0 (label=7) | OutputChannelModulo | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalanced | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | TaskRoundRobin | et_activity=4204 | cycle_reduction_observed=yes
+

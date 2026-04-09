@@ -1,0 +1,6 @@
+scenario_id,scenario_name,suite_tier,source,mnist_label,grouping_policy,cycles_et_off,cycles_et_on,cycle_delta,cycle_speedup,wall_time_et_off_ms,wall_time_et_on_ms,wall_time_speedup,tasks_terminated_early,output_elements_terminated_early,macs_skipped,bit_steps_skipped,exact_match,math_consistent,cycle_reduction_observed
+quick-mnist-sample-0,MNIST sample 0,quick,mnist,7,OutputChannelModulo,76786.000000,33341.000000,43445.000000,2.303050,2217.753722,930.833757,2.382545,4204,4204,33370,295346,true,true,true
+quick-mnist-sample-0,MNIST sample 0,quick,mnist,7,BroadcastPhaseAwareFanoutBalanced,78102.000000,33729.000000,44373.000000,2.315574,2528.344961,1267.227928,1.995178,4204,4204,33370,295346,true,true,true
+quick-mnist-sample-0,MNIST sample 0,quick,mnist,7,ETAwareCostBalancedMemoryAware,81392.000000,34557.000000,46835.000000,2.355297,5482.100389,3275.740558,1.673545,4204,4204,33370,295346,true,true,true
+quick-mnist-sample-0,MNIST sample 0,quick,mnist,7,ETAwareCostBalanced,79625.000000,34620.000000,45005.000000,2.299971,3191.898487,2274.586253,1.403288,4204,4204,33370,295346,true,true,true
+quick-mnist-sample-0,MNIST sample 0,quick,mnist,7,TaskRoundRobin,83162.000000,35420.000000,47742.000000,2.347883,2270.917418,1011.482295,2.245138,4204,4204,33370,295346,true,true,true

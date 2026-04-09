@@ -1,0 +1,395 @@
+Section 1: Benchmark Configuration
+==================================
+mode=compare
+suite_tiers=quick,extended
+et_mode=paired
+warmup_iterations=1
+timed_repetitions=1
+grouping_policies=OutputChannelModulo,TaskRoundRobin,ETAwareCostBalanced,ETAwareCostBalancedMemoryAware,BroadcastPhaseAwareFanoutBalanced
+scenario_count=33
+exactness_pass=PASS
+primary_invariants_pass=PASS
+
+Section 2: ET Comparisons
+=========================
+scenario | grouping_policy | cycles_et_off | cycles_et_on | cycle_delta | cycle_speedup | wall_et_off_ms | wall_et_on_ms | wall_speedup | et_activity | macs_skipped | bit_steps_skipped | math_consistent | cycle_reduction_observed
+extended-mnist-sample-0 (label=7) | OutputChannelModulo | 76786.000 | 33341.000 | 43445.000 | 2.303050 | 2176.594368 | 897.135694 | 2.426160 | 4204 | 33370 | 295346 | yes | yes
+extended-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | 78102.000 | 33729.000 | 44373.000 | 2.315574 | 2432.601913 | 1281.956392 | 1.897570 | 4204 | 33370 | 295346 | yes | yes
+extended-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | 81392.000 | 34557.000 | 46835.000 | 2.355297 | 5410.062882 | 3281.725034 | 1.648542 | 4204 | 33370 | 295346 | yes | yes
+extended-mnist-sample-0 (label=7) | ETAwareCostBalanced | 79625.000 | 34620.000 | 45005.000 | 2.299971 | 3161.277840 | 2203.354998 | 1.434756 | 4204 | 33370 | 295346 | yes | yes
+extended-mnist-sample-0 (label=7) | TaskRoundRobin | 83162.000 | 35420.000 | 47742.000 | 2.347883 | 2192.409516 | 940.538117 | 2.331016 | 4204 | 33370 | 295346 | yes | yes
+extended-mnist-sample-1 (label=2) | OutputChannelModulo | 76786.000 | 35709.000 | 41077.000 | 2.150326 | 2115.533327 | 979.750013 | 2.159258 | 4010 | 31669 | 280007 | yes | yes
+extended-mnist-sample-1 (label=2) | BroadcastPhaseAwareFanoutBalanced | 76747.000 | 36038.000 | 40709.000 | 2.129613 | 2288.778874 | 1301.875848 | 1.758062 | 4010 | 31669 | 280007 | yes | yes
+extended-mnist-sample-1 (label=2) | ETAwareCostBalancedMemoryAware | 80397.000 | 37161.000 | 43236.000 | 2.163478 | 5720.242220 | 3754.260665 | 1.523667 | 4010 | 31669 | 280007 | yes | yes
+extended-mnist-sample-1 (label=2) | ETAwareCostBalanced | 79456.000 | 37213.000 | 42243.000 | 2.135168 | 4103.026597 | 2009.475173 | 2.041840 | 4010 | 31669 | 280007 | yes | yes
+extended-mnist-sample-1 (label=2) | TaskRoundRobin | 83162.000 | 37660.000 | 45502.000 | 2.208232 | 2152.941023 | 965.741933 | 2.229313 | 4010 | 31669 | 280007 | yes | yes
+extended-mnist-sample-1038 (label=1) | BroadcastPhaseAwareFanoutBalanced | 77132.000 | 30622.000 | 46510.000 | 2.518843 | 2405.540076 | 1326.958032 | 1.812823 | 4450 | 35534 | 314954 | yes | yes
+extended-mnist-sample-1038 (label=1) | OutputChannelModulo | 76786.000 | 30801.000 | 45985.000 | 2.492971 | 2156.797605 | 846.514863 | 2.547856 | 4450 | 35534 | 314954 | yes | yes
+extended-mnist-sample-1038 (label=1) | ETAwareCostBalancedMemoryAware | 77180.000 | 31101.000 | 46079.000 | 2.481592 | 6027.142669 | 4257.537541 | 1.415641 | 4450 | 35534 | 314954 | yes | yes
+extended-mnist-sample-1038 (label=1) | ETAwareCostBalanced | 79496.000 | 31669.000 | 47827.000 | 2.510215 | 3769.691765 | 1671.087818 | 2.255831 | 4450 | 35534 | 314954 | yes | yes
+extended-mnist-sample-1038 (label=1) | TaskRoundRobin | 83162.000 | 32526.000 | 50636.000 | 2.556785 | 2224.165908 | 914.605684 | 2.431830 | 4450 | 35534 | 314954 | yes | yes
+extended-mnist-sample-11 (label=6) | OutputChannelModulo | 76786.000 | 36517.000 | 40269.000 | 2.102747 | 2190.694172 | 1032.692890 | 2.121341 | 3932 | 31097 | 274929 | yes | yes
+extended-mnist-sample-11 (label=6) | BroadcastPhaseAwareFanoutBalanced | 77189.000 | 37271.000 | 39918.000 | 2.071020 | 2299.654456 | 1397.538905 | 1.645503 | 3932 | 31097 | 274929 | yes | yes
+extended-mnist-sample-11 (label=6) | ETAwareCostBalancedMemoryAware | 81578.000 | 38061.000 | 43517.000 | 2.143349 | 5693.852052 | 3660.186720 | 1.555618 | 3932 | 31097 | 274929 | yes | yes
+extended-mnist-sample-11 (label=6) | ETAwareCostBalanced | 79299.000 | 38521.000 | 40778.000 | 2.058591 | 3789.880734 | 1839.611389 | 2.060153 | 3932 | 31097 | 274929 | yes | yes
+extended-mnist-sample-11 (label=6) | TaskRoundRobin | 83162.000 | 38568.000 | 44594.000 | 2.156244 | 2182.423824 | 998.863122 | 2.184908 | 3932 | 31097 | 274929 | yes | yes
+extended-mnist-sample-18 (label=3) | OutputChannelModulo | 76786.000 | 37745.000 | 39041.000 | 2.034336 | 2113.002226 | 1016.015136 | 2.079696 | 3830 | 30091 | 265766 | yes | yes
+extended-mnist-sample-18 (label=3) | BroadcastPhaseAwareFanoutBalanced | 76750.000 | 38439.000 | 38311.000 | 1.996670 | 2328.816269 | 1373.054273 | 1.696085 | 3830 | 30091 | 265766 | yes | yes
+extended-mnist-sample-18 (label=3) | ETAwareCostBalancedMemoryAware | 81476.000 | 39114.000 | 42362.000 | 2.083039 | 4634.687713 | 2840.601637 | 1.631587 | 3830 | 30091 | 265766 | yes | yes
+extended-mnist-sample-18 (label=3) | ETAwareCostBalanced | 79677.000 | 39797.000 | 39880.000 | 2.002086 | 3708.978482 | 1535.175443 | 2.415996 | 3830 | 30091 | 265766 | yes | yes
+extended-mnist-sample-18 (label=3) | TaskRoundRobin | 83162.000 | 40097.000 | 43065.000 | 2.074021 | 2161.409467 | 1092.440230 | 1.978515 | 3830 | 30091 | 265766 | yes | yes
+extended-mnist-sample-2 (label=1) | OutputChannelModulo | 76786.000 | 31467.000 | 45319.000 | 2.440207 | 2175.931981 | 880.323925 | 2.471740 | 4372 | 34883 | 309193 | yes | yes
+extended-mnist-sample-2 (label=1) | BroadcastPhaseAwareFanoutBalanced | 76657.000 | 31568.000 | 45089.000 | 2.428313 | 2333.093293 | 1287.247206 | 1.812467 | 4372 | 34883 | 309193 | yes | yes
+extended-mnist-sample-2 (label=1) | ETAwareCostBalancedMemoryAware | 79109.000 | 32142.000 | 46967.000 | 2.461235 | 6025.730282 | 4678.740759 | 1.287896 | 4372 | 34883 | 309193 | yes | yes
+extended-mnist-sample-2 (label=1) | ETAwareCostBalanced | 78498.000 | 32526.000 | 45972.000 | 2.413392 | 3089.831618 | 2403.491493 | 1.285560 | 4372 | 34883 | 309193 | yes | yes
+extended-mnist-sample-2 (label=1) | TaskRoundRobin | 83162.000 | 33068.000 | 50094.000 | 2.514878 | 2207.785510 | 888.123246 | 2.485900 | 4372 | 34883 | 309193 | yes | yes
+extended-mnist-sample-2462 (label=2) | OutputChannelModulo | 76786.000 | 42249.000 | 34537.000 | 1.817463 | 2155.841310 | 1161.175400 | 1.856603 | 3464 | 26597 | 235063 | yes | yes
+extended-mnist-sample-2462 (label=2) | BroadcastPhaseAwareFanoutBalanced | 76642.000 | 42688.000 | 33954.000 | 1.795399 | 2461.716616 | 1571.099695 | 1.566875 | 3464 | 26597 | 235063 | yes | yes
+extended-mnist-sample-2462 (label=2) | ETAwareCostBalancedMemoryAware | 81285.000 | 44191.000 | 37094.000 | 1.839402 | 5354.134796 | 3664.234886 | 1.461188 | 3464 | 26597 | 235063 | yes | yes
+extended-mnist-sample-2462 (label=2) | ETAwareCostBalanced | 79378.000 | 44388.000 | 34990.000 | 1.788276 | 3742.263296 | 1751.872520 | 2.136150 | 3464 | 26597 | 235063 | yes | yes
+extended-mnist-sample-2462 (label=2) | TaskRoundRobin | 83162.000 | 45388.000 | 37774.000 | 1.832246 | 2196.059046 | 1234.978870 | 1.778216 | 3464 | 26597 | 235063 | yes | yes
+extended-mnist-sample-2827 (label=1) | OutputChannelModulo | 76786.000 | 30666.000 | 46120.000 | 2.503946 | 2172.439323 | 834.259069 | 2.604034 | 4463 | 35641 | 315908 | yes | yes
+extended-mnist-sample-2827 (label=1) | BroadcastPhaseAwareFanoutBalanced | 76845.000 | 30688.000 | 46157.000 | 2.504073 | 2372.007355 | 1253.773100 | 1.891895 | 4463 | 35641 | 315908 | yes | yes
+extended-mnist-sample-2827 (label=1) | ETAwareCostBalancedMemoryAware | 80284.000 | 31054.000 | 49230.000 | 2.585303 | 4312.127211 | 2870.108182 | 1.502427 | 4463 | 35641 | 315908 | yes | yes
+extended-mnist-sample-2827 (label=1) | ETAwareCostBalanced | 78606.000 | 31237.000 | 47369.000 | 2.516439 | 3152.425889 | 2375.401731 | 1.327113 | 4463 | 35641 | 315908 | yes | yes
+extended-mnist-sample-2827 (label=1) | TaskRoundRobin | 83162.000 | 32451.000 | 50711.000 | 2.562695 | 2173.320685 | 861.171176 | 2.523680 | 4463 | 35641 | 315908 | yes | yes
+extended-mnist-sample-3 (label=0) | OutputChannelModulo | 76786.000 | 37302.000 | 39484.000 | 2.058496 | 2192.249808 | 1048.968987 | 2.089909 | 3872 | 30446 | 269255 | yes | yes
+extended-mnist-sample-3 (label=0) | BroadcastPhaseAwareFanoutBalanced | 76945.000 | 37814.000 | 39131.000 | 2.034828 | 2386.767836 | 1479.741273 | 1.612963 | 3872 | 30446 | 269255 | yes | yes
+extended-mnist-sample-3 (label=0) | ETAwareCostBalancedMemoryAware | 81684.000 | 38942.000 | 42742.000 | 2.097581 | 5464.909799 | 3609.448618 | 1.514057 | 3872 | 30446 | 269255 | yes | yes
+extended-mnist-sample-3 (label=0) | ETAwareCostBalanced | 79538.000 | 39068.000 | 40470.000 | 2.035886 | 3979.704510 | 2002.111011 | 1.987754 | 3872 | 30446 | 269255 | yes | yes
+extended-mnist-sample-3 (label=0) | TaskRoundRobin | 83162.000 | 39704.000 | 43458.000 | 2.094550 | 2197.076477 | 1070.477650 | 2.052426 | 3872 | 30446 | 269255 | yes | yes
+extended-mnist-sample-3768 (label=0) | OutputChannelModulo | 76786.000 | 42745.000 | 34041.000 | 1.796374 | 2171.226024 | 1206.365213 | 1.799808 | 3442 | 26419 | 233394 | yes | yes
+extended-mnist-sample-3768 (label=0) | BroadcastPhaseAwareFanoutBalanced | 76714.000 | 43026.000 | 33688.000 | 1.782968 | 2343.601541 | 1533.022904 | 1.528745 | 3442 | 26419 | 233394 | yes | yes
+extended-mnist-sample-3768 (label=0) | ETAwareCostBalanced | 79353.000 | 44560.000 | 34793.000 | 1.780812 | 3727.072474 | 2391.605266 | 1.558398 | 3442 | 26419 | 233394 | yes | yes
+extended-mnist-sample-3768 (label=0) | ETAwareCostBalancedMemoryAware | 81369.000 | 44640.000 | 36729.000 | 1.822782 | 5271.060784 | 3909.721495 | 1.348193 | 3442 | 26419 | 233394 | yes | yes
+extended-mnist-sample-3768 (label=0) | TaskRoundRobin | 83162.000 | 45499.000 | 37663.000 | 1.827776 | 2212.813159 | 1209.630276 | 1.829330 | 3442 | 26419 | 233394 | yes | yes
+extended-mnist-sample-4 (label=4) | OutputChannelModulo | 76786.000 | 34527.000 | 42259.000 | 2.223941 | 2173.650949 | 939.203906 | 2.314355 | 4110 | 32683 | 289273 | yes | yes
+extended-mnist-sample-4 (label=4) | BroadcastPhaseAwareFanoutBalanced | 76989.000 | 34735.000 | 42254.000 | 2.216468 | 2325.483316 | 1243.748203 | 1.869738 | 4110 | 32683 | 289273 | yes | yes
+extended-mnist-sample-4 (label=4) | ETAwareCostBalancedMemoryAware | 80640.000 | 35425.000 | 45215.000 | 2.276359 | 5450.474359 | 3598.953857 | 1.514461 | 4110 | 32683 | 289273 | yes | yes
+extended-mnist-sample-4 (label=4) | ETAwareCostBalanced | 79648.000 | 35565.000 | 44083.000 | 2.239505 | 3101.633516 | 2569.933569 | 1.206892 | 4110 | 32683 | 289273 | yes | yes
+extended-mnist-sample-4 (label=4) | TaskRoundRobin | 83162.000 | 36352.000 | 46810.000 | 2.287687 | 2187.245913 | 949.347903 | 2.303946 | 4110 | 32683 | 289273 | yes | yes
+extended-mnist-sample-61 (label=8) | OutputChannelModulo | 76786.000 | 36238.000 | 40548.000 | 2.118936 | 2147.148082 | 1056.185811 | 2.032926 | 3965 | 31209 | 275913 | yes | yes
+extended-mnist-sample-61 (label=8) | BroadcastPhaseAwareFanoutBalanced | 77203.000 | 36559.000 | 40644.000 | 2.111737 | 2361.558150 | 1345.657069 | 1.754948 | 3965 | 31209 | 275913 | yes | yes
+extended-mnist-sample-61 (label=8) | ETAwareCostBalancedMemoryAware | 81028.000 | 37970.000 | 43058.000 | 2.134001 | 5402.790314 | 3540.508730 | 1.525993 | 3965 | 31209 | 275913 | yes | yes
+extended-mnist-sample-61 (label=8) | ETAwareCostBalanced | 79012.000 | 38046.000 | 40966.000 | 2.076749 | 3876.440485 | 1907.364495 | 2.032354 | 3965 | 31209 | 275913 | yes | yes
+extended-mnist-sample-61 (label=8) | TaskRoundRobin | 83162.000 | 38385.000 | 44777.000 | 2.166523 | 2198.018144 | 1066.329163 | 2.061294 | 3965 | 31209 | 275913 | yes | yes
+extended-mnist-sample-7 (label=9) | OutputChannelModulo | 76786.000 | 34419.000 | 42367.000 | 2.230919 | 2161.051433 | 954.268789 | 2.264615 | 4124 | 32745 | 289866 | yes | yes
+extended-mnist-sample-7 (label=9) | BroadcastPhaseAwareFanoutBalanced | 77509.000 | 34943.000 | 42566.000 | 2.218155 | 2300.088358 | 1320.072088 | 1.742396 | 4124 | 32745 | 289866 | yes | yes
+extended-mnist-sample-7 (label=9) | ETAwareCostBalancedMemoryAware | 80625.000 | 35266.000 | 45359.000 | 2.286196 | 5333.288704 | 3556.169385 | 1.499729 | 4124 | 32745 | 289866 | yes | yes
+extended-mnist-sample-7 (label=9) | ETAwareCostBalanced | 79086.000 | 35548.000 | 43538.000 | 2.224767 | 3009.688623 | 1366.205551 | 2.202954 | 4124 | 32745 | 289866 | yes | yes
+extended-mnist-sample-7 (label=9) | TaskRoundRobin | 83162.000 | 36181.000 | 46981.000 | 2.298499 | 2228.173347 | 949.064585 | 2.347757 | 4124 | 32745 | 289866 | yes | yes
+extended-mnist-sample-8 (label=5) | OutputChannelModulo | 76786.000 | 35972.000 | 40814.000 | 2.134605 | 2166.839486 | 987.589543 | 2.194069 | 3989 | 31430 | 277914 | yes | yes
+extended-mnist-sample-8 (label=5) | BroadcastPhaseAwareFanoutBalanced | 77008.000 | 36539.000 | 40469.000 | 2.107556 | 2305.332584 | 1360.799810 | 1.694101 | 3989 | 31430 | 277914 | yes | yes
+extended-mnist-sample-8 (label=5) | ETAwareCostBalanced | 79239.000 | 37764.000 | 41475.000 | 2.098268 | 3962.269445 | 1915.232050 | 2.068820 | 3989 | 31430 | 277914 | yes | yes
+extended-mnist-sample-8 (label=5) | ETAwareCostBalancedMemoryAware | 81728.000 | 37802.000 | 43926.000 | 2.162002 | 5364.297662 | 3592.069899 | 1.493372 | 3989 | 31430 | 277914 | yes | yes
+extended-mnist-sample-8 (label=5) | TaskRoundRobin | 83162.000 | 38056.000 | 45106.000 | 2.185253 | 2190.919609 | 1059.954372 | 2.066994 | 3989 | 31430 | 277914 | yes | yes
+extended-synthetic-default-uniform-seed-1 | OutputChannelModulo | 224494.000 | 132631.000 | 91863.000 | 1.692621 | 6716.955532 | 3833.613730 | 1.752121 | 1099 | 61994 | 496864 | yes | yes
+extended-synthetic-default-uniform-seed-1 | BroadcastPhaseAwareFanoutBalanced | 226122.000 | 133251.000 | 92871.000 | 1.696963 | 6137.287975 | 3689.804484 | 1.663310 | 1099 | 61994 | 496864 | yes | yes
+extended-synthetic-default-uniform-seed-1 | TaskRoundRobin | 226778.000 | 133418.000 | 93360.000 | 1.699756 | 5973.531238 | 3462.315079 | 1.725300 | 1099 | 61994 | 496864 | yes | yes
+extended-synthetic-default-uniform-seed-1 | ETAwareCostBalanced | 227464.000 | 133449.000 | 94015.000 | 1.704501 | 5871.392838 | 3577.553535 | 1.641175 | 1099 | 61994 | 496864 | yes | yes
+extended-synthetic-default-uniform-seed-1 | ETAwareCostBalancedMemoryAware | 227592.000 | 133659.000 | 93933.000 | 1.702781 | 6396.114768 | 3857.482642 | 1.658106 | 1099 | 61994 | 496864 | yes | yes
+extended-synthetic-default-uniform-seed-13 | OutputChannelModulo | 224579.000 | 145662.000 | 78917.000 | 1.541782 | 6657.988936 | 4064.954292 | 1.637900 | 973 | 53607 | 429677 | yes | yes
+extended-synthetic-default-uniform-seed-13 | TaskRoundRobin | 227462.000 | 145673.000 | 81789.000 | 1.561456 | 6042.191125 | 3753.410932 | 1.609787 | 973 | 53607 | 429677 | yes | yes
+extended-synthetic-default-uniform-seed-13 | BroadcastPhaseAwareFanoutBalanced | 225887.000 | 145859.000 | 80028.000 | 1.548667 | 6260.312252 | 3967.214025 | 1.578012 | 973 | 53607 | 429677 | yes | yes
+extended-synthetic-default-uniform-seed-13 | ETAwareCostBalanced | 227229.000 | 146018.000 | 81211.000 | 1.556171 | 5810.162804 | 3816.127328 | 1.522529 | 973 | 53607 | 429677 | yes | yes
+extended-synthetic-default-uniform-seed-13 | ETAwareCostBalancedMemoryAware | 227535.000 | 146101.000 | 81434.000 | 1.557382 | 6112.160771 | 4127.373658 | 1.480884 | 973 | 53607 | 429677 | yes | yes
+extended-synthetic-default-uniform-seed-29 | OutputChannelModulo | 224952.000 | 136360.000 | 88592.000 | 1.649692 | 6573.061369 | 3731.392377 | 1.761557 | 1041 | 59633 | 477992 | yes | yes
+extended-synthetic-default-uniform-seed-29 | BroadcastPhaseAwareFanoutBalanced | 226906.000 | 137375.000 | 89531.000 | 1.651727 | 6024.182059 | 3728.812581 | 1.615577 | 1041 | 59633 | 477992 | yes | yes
+extended-synthetic-default-uniform-seed-29 | ETAwareCostBalanced | 227733.000 | 137391.000 | 90342.000 | 1.657554 | 5923.504448 | 3662.541071 | 1.617321 | 1041 | 59633 | 477992 | yes | yes
+extended-synthetic-default-uniform-seed-29 | TaskRoundRobin | 226908.000 | 137449.000 | 89459.000 | 1.650852 | 6073.209866 | 3592.921897 | 1.690326 | 1041 | 59633 | 477992 | yes | yes
+extended-synthetic-default-uniform-seed-29 | ETAwareCostBalancedMemoryAware | 227777.000 | 137673.000 | 90104.000 | 1.654478 | 6121.726915 | 3905.051396 | 1.567643 | 1041 | 59633 | 477992 | yes | yes
+extended-synthetic-default-uniform-seed-42 | OutputChannelModulo | 224908.000 | 143869.000 | 81039.000 | 1.563283 | 6714.954630 | 4142.439046 | 1.621015 | 981 | 54522 | 437089 | yes | yes
+extended-synthetic-default-uniform-seed-42 | BroadcastPhaseAwareFanoutBalanced | 226075.000 | 144223.000 | 81852.000 | 1.567538 | 6326.014925 | 3995.331148 | 1.583352 | 981 | 54522 | 437089 | yes | yes
+extended-synthetic-default-uniform-seed-42 | TaskRoundRobin | 226861.000 | 144600.000 | 82261.000 | 1.568887 | 5983.159891 | 3730.174569 | 1.603989 | 981 | 54522 | 437089 | yes | yes
+extended-synthetic-default-uniform-seed-42 | ETAwareCostBalanced | 227401.000 | 145042.000 | 82359.000 | 1.567829 | 5978.719320 | 3903.236988 | 1.531734 | 981 | 54522 | 437089 | yes | yes
+extended-synthetic-default-uniform-seed-42 | ETAwareCostBalancedMemoryAware | 227398.000 | 145659.000 | 81739.000 | 1.561167 | 6186.981255 | 4746.532490 | 1.303474 | 981 | 54522 | 437089 | yes | yes
+extended-synthetic-default-uniform-seed-7 | BroadcastPhaseAwareFanoutBalanced | 227723.000 | 135213.000 | 92510.000 | 1.684180 | 5989.160528 | 3606.175068 | 1.660807 | 1079 | 60584 | 485656 | yes | yes
+extended-synthetic-default-uniform-seed-7 | ETAwareCostBalanced | 227776.000 | 135284.000 | 92492.000 | 1.683688 | 5820.863521 | 3668.167524 | 1.586859 | 1079 | 60584 | 485656 | yes | yes
+extended-synthetic-default-uniform-seed-7 | OutputChannelModulo | 224709.000 | 135294.000 | 89415.000 | 1.660894 | 6718.384700 | 3730.914718 | 1.800734 | 1079 | 60584 | 485656 | yes | yes
+extended-synthetic-default-uniform-seed-7 | ETAwareCostBalancedMemoryAware | 227244.000 | 135657.000 | 91587.000 | 1.675137 | 6060.292193 | 3792.992037 | 1.597760 | 1079 | 60584 | 485656 | yes | yes
+extended-synthetic-default-uniform-seed-7 | TaskRoundRobin | 227433.000 | 135719.000 | 91714.000 | 1.675764 | 6099.319817 | 3627.308208 | 1.681500 | 1079 | 60584 | 485656 | yes | yes
+extended-synthetic-large-uniform-seed-1 | TaskRoundRobin | 3623429.000 | 2316392.000 | 1307037.000 | 1.564256 | 90366.731075 | 59340.917460 | 1.522840 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-large-uniform-seed-1 | ETAwareCostBalanced | 3627357.000 | 2318475.000 | 1308882.000 | 1.564544 | 92912.663847 | 60602.812416 | 1.533141 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-large-uniform-seed-1 | BroadcastPhaseAwareFanoutBalanced | 3624278.000 | 2318544.000 | 1305734.000 | 1.563170 | 92936.794254 | 61154.823710 | 1.519697 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-large-uniform-seed-1 | OutputChannelModulo | 3615620.000 | 2320001.000 | 1295619.000 | 1.558456 | 109603.205059 | 60984.121441 | 1.797242 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-large-uniform-seed-1 | ETAwareCostBalancedMemoryAware | 3630209.000 | 2323285.000 | 1306924.000 | 1.562533 | 103712.687105 | 69230.997354 | 1.498067 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-large-uniform-seed-13 | TaskRoundRobin | 3623831.000 | 2153613.000 | 1470218.000 | 1.682675 | 97470.703821 | 60280.065252 | 1.616964 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-large-uniform-seed-13 | ETAwareCostBalanced | 3627860.000 | 2154805.000 | 1473055.000 | 1.683614 | 100476.211915 | 61912.968595 | 1.622862 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-large-uniform-seed-13 | BroadcastPhaseAwareFanoutBalanced | 3624117.000 | 2156010.000 | 1468107.000 | 1.680937 | 99783.698119 | 61563.899532 | 1.620815 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-large-uniform-seed-13 | OutputChannelModulo | 3623239.000 | 2157781.000 | 1465458.000 | 1.679150 | 108413.502661 | 61669.064764 | 1.757988 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-large-uniform-seed-13 | ETAwareCostBalancedMemoryAware | 3627305.000 | 2158957.000 | 1468348.000 | 1.680119 | 114833.975524 | 71991.303758 | 1.595109 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-large-uniform-seed-7 | TaskRoundRobin | 3624046.000 | 2342826.000 | 1281220.000 | 1.546869 | 97871.155860 | 65428.823150 | 1.495842 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-large-uniform-seed-7 | BroadcastPhaseAwareFanoutBalanced | 3623790.000 | 2345150.000 | 1278640.000 | 1.545227 | 100949.448494 | 66943.589672 | 1.507978 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-large-uniform-seed-7 | OutputChannelModulo | 3619868.000 | 2346563.000 | 1273305.000 | 1.542626 | 108871.965661 | 66844.742563 | 1.628729 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-large-uniform-seed-7 | ETAwareCostBalanced | 3628176.000 | 2346832.000 | 1281344.000 | 1.545989 | 100157.368539 | 67586.966778 | 1.481904 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-large-uniform-seed-7 | ETAwareCostBalancedMemoryAware | 3630149.000 | 2350377.000 | 1279772.000 | 1.544496 | 114507.176954 | 75971.442732 | 1.507240 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-1 | BroadcastPhaseAwareFanoutBalanced | 4459707.000 | 2901583.000 | 1558124.000 | 1.536991 | 94753.574559 | 67875.484386 | 1.395991 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-1 | OutputChannelModulo | 4482013.000 | 2903512.000 | 1578501.000 | 1.543652 | 89581.848484 | 62062.661965 | 1.443410 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalanced | 4474370.000 | 2903578.000 | 1570792.000 | 1.540985 | 97381.476084 | 66866.181784 | 1.456364 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-1 | TaskRoundRobin | 4465557.000 | 2904654.000 | 1560903.000 | 1.537380 | 89537.487190 | 63257.394484 | 1.415447 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-1 | ETAwareCostBalancedMemoryAware | 4466808.000 | 2908934.000 | 1557874.000 | 1.535548 | 112041.740919 | 77752.711887 | 1.441001 | 7969 | 855974 | 6853652 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-13 | OutputChannelModulo | 4478901.000 | 2698927.000 | 1779974.000 | 1.659512 | 95297.954459 | 62480.290793 | 1.525248 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-13 | ETAwareCostBalanced | 4458328.000 | 2699644.000 | 1758684.000 | 1.651450 | 95086.560400 | 62369.509104 | 1.524568 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-13 | TaskRoundRobin | 4451496.000 | 2701582.000 | 1749914.000 | 1.647737 | 91816.392033 | 58151.880930 | 1.578907 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-13 | BroadcastPhaseAwareFanoutBalanced | 4462300.000 | 2702556.000 | 1759744.000 | 1.651141 | 95604.313104 | 63334.030945 | 1.509525 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-13 | ETAwareCostBalancedMemoryAware | 4467829.000 | 2706270.000 | 1761559.000 | 1.650918 | 109120.162507 | 72617.180177 | 1.502677 | 8868 | 962055 | 7703408 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-7 | BroadcastPhaseAwareFanoutBalanced | 4463891.000 | 2934337.000 | 1529554.000 | 1.521261 | 95673.652342 | 68000.482075 | 1.406956 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-7 | OutputChannelModulo | 4482888.000 | 2936675.000 | 1546213.000 | 1.526518 | 95490.050590 | 68373.234580 | 1.396600 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-7 | TaskRoundRobin | 4472801.000 | 2936878.000 | 1535923.000 | 1.522978 | 92493.254444 | 63040.000598 | 1.467215 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-7 | ETAwareCostBalanced | 4463129.000 | 2939073.000 | 1524056.000 | 1.518550 | 96168.843161 | 68345.370632 | 1.407101 | 7844 | 838375 | 6712882 | yes | yes
+extended-synthetic-memory-pressure-uniform-seed-7 | ETAwareCostBalancedMemoryAware | 4474248.000 | 2941438.000 | 1532810.000 | 1.521109 | 109355.112768 | 76587.546688 | 1.427845 | 7844 | 838375 | 6712882 | yes | yes
+quick-mnist-sample-0 (label=7) | OutputChannelModulo | 76786.000 | 33341.000 | 43445.000 | 2.303050 | 2171.565396 | 965.966958 | 2.248074 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | 78102.000 | 33729.000 | 44373.000 | 2.315574 | 2449.535944 | 1240.965768 | 1.973895 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | 81392.000 | 34557.000 | 46835.000 | 2.355297 | 5494.287820 | 3224.381716 | 1.703982 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalanced | 79625.000 | 34620.000 | 45005.000 | 2.299971 | 3168.441075 | 2239.571645 | 1.414753 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-0 (label=7) | TaskRoundRobin | 83162.000 | 35420.000 | 47742.000 | 2.347883 | 2325.775097 | 1007.058221 | 2.309474 | 4204 | 33370 | 295346 | yes | yes
+quick-mnist-sample-1038 (label=1) | BroadcastPhaseAwareFanoutBalanced | 77132.000 | 30622.000 | 46510.000 | 2.518843 | 2329.385510 | 1277.696455 | 1.823113 | 4450 | 35534 | 314954 | yes | yes
+quick-mnist-sample-1038 (label=1) | OutputChannelModulo | 76786.000 | 30801.000 | 45985.000 | 2.492971 | 2163.617983 | 830.372589 | 2.605599 | 4450 | 35534 | 314954 | yes | yes
+quick-mnist-sample-1038 (label=1) | ETAwareCostBalancedMemoryAware | 77180.000 | 31101.000 | 46079.000 | 2.481592 | 6005.651196 | 4188.829333 | 1.433730 | 4450 | 35534 | 314954 | yes | yes
+quick-mnist-sample-1038 (label=1) | ETAwareCostBalanced | 79496.000 | 31669.000 | 47827.000 | 2.510215 | 3765.029365 | 1652.471682 | 2.278423 | 4450 | 35534 | 314954 | yes | yes
+quick-mnist-sample-1038 (label=1) | TaskRoundRobin | 83162.000 | 32526.000 | 50636.000 | 2.556785 | 2167.046048 | 906.711666 | 2.390006 | 4450 | 35534 | 314954 | yes | yes
+quick-mnist-sample-2462 (label=2) | OutputChannelModulo | 76786.000 | 42249.000 | 34537.000 | 1.817463 | 2147.202234 | 1203.057764 | 1.784787 | 3464 | 26597 | 235063 | yes | yes
+quick-mnist-sample-2462 (label=2) | BroadcastPhaseAwareFanoutBalanced | 76642.000 | 42688.000 | 33954.000 | 1.795399 | 2375.043473 | 1553.964096 | 1.528377 | 3464 | 26597 | 235063 | yes | yes
+quick-mnist-sample-2462 (label=2) | ETAwareCostBalancedMemoryAware | 81285.000 | 44191.000 | 37094.000 | 1.839402 | 5371.406408 | 3665.615390 | 1.465349 | 3464 | 26597 | 235063 | yes | yes
+quick-mnist-sample-2462 (label=2) | ETAwareCostBalanced | 79378.000 | 44388.000 | 34990.000 | 1.788276 | 3654.834273 | 1733.767390 | 2.108030 | 3464 | 26597 | 235063 | yes | yes
+quick-mnist-sample-2462 (label=2) | TaskRoundRobin | 83162.000 | 45388.000 | 37774.000 | 1.832246 | 2182.521508 | 1197.328652 | 1.822826 | 3464 | 26597 | 235063 | yes | yes
+quick-mnist-sample-2827 (label=1) | OutputChannelModulo | 76786.000 | 30666.000 | 46120.000 | 2.503946 | 2155.072286 | 845.914426 | 2.547624 | 4463 | 35641 | 315908 | yes | yes
+quick-mnist-sample-2827 (label=1) | BroadcastPhaseAwareFanoutBalanced | 76845.000 | 30688.000 | 46157.000 | 2.504073 | 2324.019974 | 1242.014156 | 1.871170 | 4463 | 35641 | 315908 | yes | yes
+quick-mnist-sample-2827 (label=1) | ETAwareCostBalancedMemoryAware | 80284.000 | 31054.000 | 49230.000 | 2.585303 | 4220.148278 | 2787.209003 | 1.514113 | 4463 | 35641 | 315908 | yes | yes
+quick-mnist-sample-2827 (label=1) | ETAwareCostBalanced | 78606.000 | 31237.000 | 47369.000 | 2.516439 | 3209.617287 | 2336.821367 | 1.373497 | 4463 | 35641 | 315908 | yes | yes
+quick-mnist-sample-2827 (label=1) | TaskRoundRobin | 83162.000 | 32451.000 | 50711.000 | 2.562695 | 2133.326425 | 844.339114 | 2.526623 | 4463 | 35641 | 315908 | yes | yes
+quick-mnist-sample-3768 (label=0) | OutputChannelModulo | 76786.000 | 42745.000 | 34041.000 | 1.796374 | 2167.523585 | 1192.029041 | 1.818348 | 3442 | 26419 | 233394 | yes | yes
+quick-mnist-sample-3768 (label=0) | BroadcastPhaseAwareFanoutBalanced | 76714.000 | 43026.000 | 33688.000 | 1.782968 | 2453.406074 | 1509.251586 | 1.625578 | 3442 | 26419 | 233394 | yes | yes
+quick-mnist-sample-3768 (label=0) | ETAwareCostBalanced | 79353.000 | 44560.000 | 34793.000 | 1.780812 | 3684.438387 | 2416.498635 | 1.524701 | 3442 | 26419 | 233394 | yes | yes
+quick-mnist-sample-3768 (label=0) | ETAwareCostBalancedMemoryAware | 81369.000 | 44640.000 | 36729.000 | 1.822782 | 5238.759817 | 3712.625200 | 1.411066 | 3442 | 26419 | 233394 | yes | yes
+quick-mnist-sample-3768 (label=0) | TaskRoundRobin | 83162.000 | 45499.000 | 37663.000 | 1.827776 | 2156.656997 | 1215.465294 | 1.774347 | 3442 | 26419 | 233394 | yes | yes
+quick-synthetic-negative-bias-seed-2026 | BroadcastPhaseAwareFanoutBalanced | 225916.000 | 87024.000 | 138892.000 | 2.596019 | 6242.465934 | 2422.402768 | 2.576973 | 1524 | 91722 | 735404 | yes | yes
+quick-synthetic-negative-bias-seed-2026 | OutputChannelModulo | 224376.000 | 87190.000 | 137186.000 | 2.573414 | 6759.628833 | 2459.055671 | 2.748872 | 1524 | 91722 | 735404 | yes | yes
+quick-synthetic-negative-bias-seed-2026 | ETAwareCostBalancedMemoryAware | 227233.000 | 87686.000 | 139547.000 | 2.591440 | 6135.366621 | 2828.495242 | 2.169127 | 1524 | 91722 | 735404 | yes | yes
+quick-synthetic-negative-bias-seed-2026 | ETAwareCostBalanced | 227829.000 | 87746.000 | 140083.000 | 2.596460 | 6024.639148 | 2454.050991 | 2.454977 | 1524 | 91722 | 735404 | yes | yes
+quick-synthetic-negative-bias-seed-2026 | TaskRoundRobin | 226991.000 | 88247.000 | 138744.000 | 2.572223 | 6122.030269 | 2347.381520 | 2.608025 | 1524 | 91722 | 735404 | yes | yes
+quick-synthetic-sparse-seed-2026 | BroadcastPhaseAwareFanoutBalanced | 226380.000 | 153255.000 | 73125.000 | 1.477146 | 5867.164180 | 4196.570242 | 1.398086 | 736 | 48541 | 389094 | yes | yes
+quick-synthetic-sparse-seed-2026 | OutputChannelModulo | 223788.000 | 153361.000 | 70427.000 | 1.459224 | 6590.760470 | 4323.090616 | 1.524548 | 736 | 48541 | 389094 | yes | yes
+quick-synthetic-sparse-seed-2026 | ETAwareCostBalancedMemoryAware | 227414.000 | 153755.000 | 73659.000 | 1.479067 | 6090.855298 | 4439.184526 | 1.372066 | 736 | 48541 | 389094 | yes | yes
+quick-synthetic-sparse-seed-2026 | TaskRoundRobin | 226672.000 | 154007.000 | 72665.000 | 1.471829 | 6032.334596 | 3961.716486 | 1.522657 | 736 | 48541 | 389094 | yes | yes
+quick-synthetic-sparse-seed-2026 | ETAwareCostBalanced | 227260.000 | 154252.000 | 73008.000 | 1.473303 | 5851.007545 | 4102.214413 | 1.426305 | 736 | 48541 | 389094 | yes | yes
+quick-synthetic-uniform-seed-2026 | OutputChannelModulo | 224376.000 | 131469.000 | 92907.000 | 1.706684 | 6732.504757 | 3633.233151 | 1.853034 | 1106 | 62857 | 503889 | yes | yes
+quick-synthetic-uniform-seed-2026 | BroadcastPhaseAwareFanoutBalanced | 226215.000 | 131478.000 | 94737.000 | 1.720554 | 6383.556109 | 3689.793289 | 1.730058 | 1106 | 62857 | 503889 | yes | yes
+quick-synthetic-uniform-seed-2026 | ETAwareCostBalanced | 227440.000 | 131617.000 | 95823.000 | 1.728044 | 5915.458122 | 3549.625795 | 1.666502 | 1106 | 62857 | 503889 | yes | yes
+quick-synthetic-uniform-seed-2026 | TaskRoundRobin | 226991.000 | 131941.000 | 95050.000 | 1.720398 | 6141.487844 | 3389.356996 | 1.811992 | 1106 | 62857 | 503889 | yes | yes
+quick-synthetic-uniform-seed-2026 | ETAwareCostBalancedMemoryAware | 226994.000 | 132218.000 | 94776.000 | 1.716816 | 6141.271975 | 3743.053541 | 1.640712 | 1106 | 62857 | 503889 | yes | yes
+
+Section 3: Policy Rankings
+==========================
+extended-mnist-sample-0
+  1. OutputChannelModulo cycles_et_on=33341.000 speedup=2.303050
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=33729.000 speedup=2.315574
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=34557.000 speedup=2.355297
+  4. ETAwareCostBalanced cycles_et_on=34620.000 speedup=2.299971
+  5. TaskRoundRobin cycles_et_on=35420.000 speedup=2.347883
+extended-mnist-sample-1
+  1. OutputChannelModulo cycles_et_on=35709.000 speedup=2.150326
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=36038.000 speedup=2.129613
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=37161.000 speedup=2.163478
+  4. ETAwareCostBalanced cycles_et_on=37213.000 speedup=2.135168
+  5. TaskRoundRobin cycles_et_on=37660.000 speedup=2.208232
+extended-mnist-sample-1038
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=30622.000 speedup=2.518843
+  2. OutputChannelModulo cycles_et_on=30801.000 speedup=2.492971
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=31101.000 speedup=2.481592
+  4. ETAwareCostBalanced cycles_et_on=31669.000 speedup=2.510215
+  5. TaskRoundRobin cycles_et_on=32526.000 speedup=2.556785
+extended-mnist-sample-11
+  1. OutputChannelModulo cycles_et_on=36517.000 speedup=2.102747
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=37271.000 speedup=2.071020
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=38061.000 speedup=2.143349
+  4. ETAwareCostBalanced cycles_et_on=38521.000 speedup=2.058591
+  5. TaskRoundRobin cycles_et_on=38568.000 speedup=2.156244
+extended-mnist-sample-18
+  1. OutputChannelModulo cycles_et_on=37745.000 speedup=2.034336
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=38439.000 speedup=1.996670
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=39114.000 speedup=2.083039
+  4. ETAwareCostBalanced cycles_et_on=39797.000 speedup=2.002086
+  5. TaskRoundRobin cycles_et_on=40097.000 speedup=2.074021
+extended-mnist-sample-2
+  1. OutputChannelModulo cycles_et_on=31467.000 speedup=2.440207
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=31568.000 speedup=2.428313
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=32142.000 speedup=2.461235
+  4. ETAwareCostBalanced cycles_et_on=32526.000 speedup=2.413392
+  5. TaskRoundRobin cycles_et_on=33068.000 speedup=2.514878
+extended-mnist-sample-2462
+  1. OutputChannelModulo cycles_et_on=42249.000 speedup=1.817463
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=42688.000 speedup=1.795399
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=44191.000 speedup=1.839402
+  4. ETAwareCostBalanced cycles_et_on=44388.000 speedup=1.788276
+  5. TaskRoundRobin cycles_et_on=45388.000 speedup=1.832246
+extended-mnist-sample-2827
+  1. OutputChannelModulo cycles_et_on=30666.000 speedup=2.503946
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=30688.000 speedup=2.504073
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=31054.000 speedup=2.585303
+  4. ETAwareCostBalanced cycles_et_on=31237.000 speedup=2.516439
+  5. TaskRoundRobin cycles_et_on=32451.000 speedup=2.562695
+extended-mnist-sample-3
+  1. OutputChannelModulo cycles_et_on=37302.000 speedup=2.058496
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=37814.000 speedup=2.034828
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=38942.000 speedup=2.097581
+  4. ETAwareCostBalanced cycles_et_on=39068.000 speedup=2.035886
+  5. TaskRoundRobin cycles_et_on=39704.000 speedup=2.094550
+extended-mnist-sample-3768
+  1. OutputChannelModulo cycles_et_on=42745.000 speedup=1.796374
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=43026.000 speedup=1.782968
+  3. ETAwareCostBalanced cycles_et_on=44560.000 speedup=1.780812
+  4. ETAwareCostBalancedMemoryAware cycles_et_on=44640.000 speedup=1.822782
+  5. TaskRoundRobin cycles_et_on=45499.000 speedup=1.827776
+extended-mnist-sample-4
+  1. OutputChannelModulo cycles_et_on=34527.000 speedup=2.223941
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=34735.000 speedup=2.216468
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=35425.000 speedup=2.276359
+  4. ETAwareCostBalanced cycles_et_on=35565.000 speedup=2.239505
+  5. TaskRoundRobin cycles_et_on=36352.000 speedup=2.287687
+extended-mnist-sample-61
+  1. OutputChannelModulo cycles_et_on=36238.000 speedup=2.118936
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=36559.000 speedup=2.111737
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=37970.000 speedup=2.134001
+  4. ETAwareCostBalanced cycles_et_on=38046.000 speedup=2.076749
+  5. TaskRoundRobin cycles_et_on=38385.000 speedup=2.166523
+extended-mnist-sample-7
+  1. OutputChannelModulo cycles_et_on=34419.000 speedup=2.230919
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=34943.000 speedup=2.218155
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=35266.000 speedup=2.286196
+  4. ETAwareCostBalanced cycles_et_on=35548.000 speedup=2.224767
+  5. TaskRoundRobin cycles_et_on=36181.000 speedup=2.298499
+extended-mnist-sample-8
+  1. OutputChannelModulo cycles_et_on=35972.000 speedup=2.134605
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=36539.000 speedup=2.107556
+  3. ETAwareCostBalanced cycles_et_on=37764.000 speedup=2.098268
+  4. ETAwareCostBalancedMemoryAware cycles_et_on=37802.000 speedup=2.162002
+  5. TaskRoundRobin cycles_et_on=38056.000 speedup=2.185253
+extended-synthetic-default-uniform-seed-1
+  1. OutputChannelModulo cycles_et_on=132631.000 speedup=1.692621
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=133251.000 speedup=1.696963
+  3. TaskRoundRobin cycles_et_on=133418.000 speedup=1.699756
+  4. ETAwareCostBalanced cycles_et_on=133449.000 speedup=1.704501
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=133659.000 speedup=1.702781
+extended-synthetic-default-uniform-seed-13
+  1. OutputChannelModulo cycles_et_on=145662.000 speedup=1.541782
+  2. TaskRoundRobin cycles_et_on=145673.000 speedup=1.561456
+  3. BroadcastPhaseAwareFanoutBalanced cycles_et_on=145859.000 speedup=1.548667
+  4. ETAwareCostBalanced cycles_et_on=146018.000 speedup=1.556171
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=146101.000 speedup=1.557382
+extended-synthetic-default-uniform-seed-29
+  1. OutputChannelModulo cycles_et_on=136360.000 speedup=1.649692
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=137375.000 speedup=1.651727
+  3. ETAwareCostBalanced cycles_et_on=137391.000 speedup=1.657554
+  4. TaskRoundRobin cycles_et_on=137449.000 speedup=1.650852
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=137673.000 speedup=1.654478
+extended-synthetic-default-uniform-seed-42
+  1. OutputChannelModulo cycles_et_on=143869.000 speedup=1.563283
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=144223.000 speedup=1.567538
+  3. TaskRoundRobin cycles_et_on=144600.000 speedup=1.568887
+  4. ETAwareCostBalanced cycles_et_on=145042.000 speedup=1.567829
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=145659.000 speedup=1.561167
+extended-synthetic-default-uniform-seed-7
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=135213.000 speedup=1.684180
+  2. ETAwareCostBalanced cycles_et_on=135284.000 speedup=1.683688
+  3. OutputChannelModulo cycles_et_on=135294.000 speedup=1.660894
+  4. ETAwareCostBalancedMemoryAware cycles_et_on=135657.000 speedup=1.675137
+  5. TaskRoundRobin cycles_et_on=135719.000 speedup=1.675764
+extended-synthetic-large-uniform-seed-1
+  1. TaskRoundRobin cycles_et_on=2316392.000 speedup=1.564256
+  2. ETAwareCostBalanced cycles_et_on=2318475.000 speedup=1.564544
+  3. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2318544.000 speedup=1.563170
+  4. OutputChannelModulo cycles_et_on=2320001.000 speedup=1.558456
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2323285.000 speedup=1.562533
+extended-synthetic-large-uniform-seed-13
+  1. TaskRoundRobin cycles_et_on=2153613.000 speedup=1.682675
+  2. ETAwareCostBalanced cycles_et_on=2154805.000 speedup=1.683614
+  3. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2156010.000 speedup=1.680937
+  4. OutputChannelModulo cycles_et_on=2157781.000 speedup=1.679150
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2158957.000 speedup=1.680119
+extended-synthetic-large-uniform-seed-7
+  1. TaskRoundRobin cycles_et_on=2342826.000 speedup=1.546869
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2345150.000 speedup=1.545227
+  3. OutputChannelModulo cycles_et_on=2346563.000 speedup=1.542626
+  4. ETAwareCostBalanced cycles_et_on=2346832.000 speedup=1.545989
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2350377.000 speedup=1.544496
+extended-synthetic-memory-pressure-uniform-seed-1
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2901583.000 speedup=1.536991
+  2. OutputChannelModulo cycles_et_on=2903512.000 speedup=1.543652
+  3. ETAwareCostBalanced cycles_et_on=2903578.000 speedup=1.540985
+  4. TaskRoundRobin cycles_et_on=2904654.000 speedup=1.537380
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2908934.000 speedup=1.535548
+extended-synthetic-memory-pressure-uniform-seed-13
+  1. OutputChannelModulo cycles_et_on=2698927.000 speedup=1.659512
+  2. ETAwareCostBalanced cycles_et_on=2699644.000 speedup=1.651450
+  3. TaskRoundRobin cycles_et_on=2701582.000 speedup=1.647737
+  4. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2702556.000 speedup=1.651141
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2706270.000 speedup=1.650918
+extended-synthetic-memory-pressure-uniform-seed-7
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=2934337.000 speedup=1.521261
+  2. OutputChannelModulo cycles_et_on=2936675.000 speedup=1.526518
+  3. TaskRoundRobin cycles_et_on=2936878.000 speedup=1.522978
+  4. ETAwareCostBalanced cycles_et_on=2939073.000 speedup=1.518550
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=2941438.000 speedup=1.521109
+quick-mnist-sample-0
+  1. OutputChannelModulo cycles_et_on=33341.000 speedup=2.303050
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=33729.000 speedup=2.315574
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=34557.000 speedup=2.355297
+  4. ETAwareCostBalanced cycles_et_on=34620.000 speedup=2.299971
+  5. TaskRoundRobin cycles_et_on=35420.000 speedup=2.347883
+quick-mnist-sample-1038
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=30622.000 speedup=2.518843
+  2. OutputChannelModulo cycles_et_on=30801.000 speedup=2.492971
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=31101.000 speedup=2.481592
+  4. ETAwareCostBalanced cycles_et_on=31669.000 speedup=2.510215
+  5. TaskRoundRobin cycles_et_on=32526.000 speedup=2.556785
+quick-mnist-sample-2462
+  1. OutputChannelModulo cycles_et_on=42249.000 speedup=1.817463
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=42688.000 speedup=1.795399
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=44191.000 speedup=1.839402
+  4. ETAwareCostBalanced cycles_et_on=44388.000 speedup=1.788276
+  5. TaskRoundRobin cycles_et_on=45388.000 speedup=1.832246
+quick-mnist-sample-2827
+  1. OutputChannelModulo cycles_et_on=30666.000 speedup=2.503946
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=30688.000 speedup=2.504073
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=31054.000 speedup=2.585303
+  4. ETAwareCostBalanced cycles_et_on=31237.000 speedup=2.516439
+  5. TaskRoundRobin cycles_et_on=32451.000 speedup=2.562695
+quick-mnist-sample-3768
+  1. OutputChannelModulo cycles_et_on=42745.000 speedup=1.796374
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=43026.000 speedup=1.782968
+  3. ETAwareCostBalanced cycles_et_on=44560.000 speedup=1.780812
+  4. ETAwareCostBalancedMemoryAware cycles_et_on=44640.000 speedup=1.822782
+  5. TaskRoundRobin cycles_et_on=45499.000 speedup=1.827776
+quick-synthetic-negative-bias-seed-2026
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=87024.000 speedup=2.596019
+  2. OutputChannelModulo cycles_et_on=87190.000 speedup=2.573414
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=87686.000 speedup=2.591440
+  4. ETAwareCostBalanced cycles_et_on=87746.000 speedup=2.596460
+  5. TaskRoundRobin cycles_et_on=88247.000 speedup=2.572223
+quick-synthetic-sparse-seed-2026
+  1. BroadcastPhaseAwareFanoutBalanced cycles_et_on=153255.000 speedup=1.477146
+  2. OutputChannelModulo cycles_et_on=153361.000 speedup=1.459224
+  3. ETAwareCostBalancedMemoryAware cycles_et_on=153755.000 speedup=1.479067
+  4. TaskRoundRobin cycles_et_on=154007.000 speedup=1.471829
+  5. ETAwareCostBalanced cycles_et_on=154252.000 speedup=1.473303
+quick-synthetic-uniform-seed-2026
+  1. OutputChannelModulo cycles_et_on=131469.000 speedup=1.706684
+  2. BroadcastPhaseAwareFanoutBalanced cycles_et_on=131478.000 speedup=1.720554
+  3. ETAwareCostBalanced cycles_et_on=131617.000 speedup=1.728044
+  4. TaskRoundRobin cycles_et_on=131941.000 speedup=1.720398
+  5. ETAwareCostBalancedMemoryAware cycles_et_on=132218.000 speedup=1.716816
+
+Section 4: Soft Benchmark Expectations
+======================================
+extended-mnist-sample-0 (label=7) | OutputChannelModulo | et_activity=4204 | cycle_reduction_observed=yes
+extended-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | et_activity=4204 | cycle_reduction_observed=yes
+extended-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | et_activity=4204 | cycle_reduction_observed=yes
+extended-mnist-sample-0 (label=7) | ETAwareCostBalanced | et_activity=4204 | cycle_reduction_observed=yes
+extended-mnist-sample-0 (label=7) | TaskRoundRobin | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | OutputChannelModulo | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | BroadcastPhaseAwareFanoutBalanced | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalancedMemoryAware | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | ETAwareCostBalanced | et_activity=4204 | cycle_reduction_observed=yes
+quick-mnist-sample-0 (label=7) | TaskRoundRobin | et_activity=4204 | cycle_reduction_observed=yes
+
